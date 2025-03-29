@@ -93,7 +93,6 @@ copy --exclude "*.tmp,*~,*.bak"
 
 The script generates a structured text block designed for clarity. Here's an example snippet and breakdown:
 
-```
 # Project Structure
 .
 ├── src
@@ -160,7 +159,7 @@ Project Structure (Excluding specified patterns):
 ├── tests
 │   └── test_main.py
 └── requirements.txt
-```
+
 
 **Breakdown:**
 
