@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A powerful Bash script to intelligently gather, filter, format, and copy your project's source code context to the clipboard – perfect for pasting into Large Language Models (LLMs) like ChatGPT, Claude, Gemini, Bard, and more.
+A powerful Bash script to intelligently gather, filter, format, and copy your project's source code context to the clipboard – perfect for pasting into Large Language Models (LLMs) like ChatGPT, Claude, Gemini, Thinkbuddy, and more.
 
 ## The Problem
 
