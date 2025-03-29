@@ -96,17 +96,26 @@ The script generates a structured text block designed for clarity. Here's an exa
 # Project Structure
 .
 ├── src
+
 │   ├── __init__.py
+
 │   └── main.py
+
 ├── tests
+
 │   └── test_main.py
+
 └── requirements.txt
+
 
 # Source Code
 
 =============== root folder ===============
+
 =============== .txt files ===============
+
 =============== ./requirements.txt ================
+
 ```
 fastapi
 uvicorn
@@ -115,13 +124,17 @@ pytest
 ---
 
 =============== src folder ===============
+
 =============== .py files ===============
+
 =============== ./src/__init__.py ================
+
 ```
 # This is the src init file
 ```
 ---
 =============== ./src/main.py ================
+
 ```
 from fastapi import FastAPI
 
@@ -135,8 +148,11 @@ def read_root():
 ---
 
 =============== tests folder ===============
+
 =============== .py files ===============
+
 =============== ./tests/test_main.py ================
+
 ```
 from fastapi.testclient import TestClient
 from src.main import app
@@ -152,12 +168,19 @@ def test_read_main():
 ---
 Copied 45 lines to the clipboard.
 Project Structure (Excluding specified patterns):
+
 .
+
 ├── src
+
 │   ├── __init__.py
+
 │   └── main.py
+
 ├── tests
+
 │   └── test_main.py
+
 └── requirements.txt
 
 
