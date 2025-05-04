@@ -1,6 +1,6 @@
 # Code-to-Clipboard-for-LLMs
 
-**Intelligently package your project's code context for Large Language Models.**
+**Intelligently package your project's code context for LLMs. Install & try — took less than 60 seconds**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Python Version](https://img.shields.io/badge/python-3.6+-blue.svg)](https://www.python.org/downloads/) [![Platform](https://img.shields.io/badge/platform-osx%20%7C%20linux%20%7C%20windows-lightgrey.svg)]() [![GitHub Stars](https://img.shields.io/github/stars/yigitkonur/code-to-clipboard-for-llms?style=social)](https://github.com/yigitkonur/code-to-clipboard-for-llms)
 
@@ -16,7 +16,16 @@ Interacting with LLMs like ChatGPT, Claude, Gemini or apps like [Thinkbuddy](htt
 
 Spend less time preparing context and more time getting valuable insights from your AI assistant.
 
+## Install with oneliner
+
+*   **mac:** `bash -c "$(curl -fsSL https://raw.githubusercontent.com/yigitkonur/code-to-clipboard-for-llms/main/install-mac.sh)"`
+*   **linux:** `bash -c "$(curl -fsSL https://raw.githubusercontent.com/yigitkonur/code-to-clipboard-for-llms/main/install-linux.sh)"`
+*   **win/powershell:** `iex "& {$(irm 'https://raw.githubusercontent.com/yigitkonur/code-to-clipboard-for-llms/main/install-windows.ps1')}"`
+
+
 ---
+
+## How to use? 
 
 https://github.com/user-attachments/assets/399ccc84-a052-44b0-b26d-3f82cc43e16e
 
