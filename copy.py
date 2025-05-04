@@ -30,7 +30,7 @@ except ImportError:
 
 # Using tuples for immutability and slight performance gain on iteration
 DEFAULT_EXCLUDED_DIRS = (
-    ".git", ".svn", ".hg", ".bzr", "node_modules", "vendor",
+    ".git", ".svn", ".hg", ".bzr", "node_modules", "vendor", ".tap",
     "venv", "env", ".venv", "ENV", "virtualenv",
     "build", "dist", "target", "out", "bin", "obj",
     "__pycache__", ".cache", "cache",
@@ -44,7 +44,7 @@ DEFAULT_EXCLUDED_DIRS = (
 DEFAULT_EXCLUDED_PATTERNS = (
     # Compiled/object files
     "*.pyc", "*.pyo", "*.pyd", "*.so", "*.o", "*.a", "*.lib", "*.dylib", "*.bundle",
-    "*.dll", "*.exe", "*.class", "*.jar", "*.war", "*.ear",
+    "*.dll", "*.exe", "*.class", "*.jar", "*.war", "*.ear", ".tap",
     # Logs and build info
     "*.log", "*.tsbuildinfo",
     # Editor backups/swaps
@@ -60,7 +60,7 @@ DEFAULT_EXCLUDED_PATTERNS = (
     # Minified files and source maps
     "*.min.*", "*.map",
     # Common config files often not needed for core logic understanding
-    ".eslintrc*", ".prettierrc*", ".editorconfig", ".gitattributes", ".gitmodules",
+    ".editorconfig", ".gitattributes", ".gitmodules",
     ".env*", # Exclude all .env except .env.example
     "tsconfig.json", "tsconfig.*.json",
     # Common data/doc formats to exclude by default
@@ -68,7 +68,6 @@ DEFAULT_EXCLUDED_PATTERNS = (
     "*.csv", "*.tsv", "*.xml", "*.yaml", "*.yml", # Data
     "*.htm", "*.html", "*.css", ".sql" # Web/DB assets
     "*.md", "*.markdown", ".rst", # Docs (except specific files)
-    "*.json", "*.jsonc", ".yaml", ".yml", ".xml", ".html", ".htm", ".css", ".sql", ".csv", ".tsv", ".md", ".markdown", ".rst",
     "*.json", "*.jsonc", ".yaml", ".yml", ".xml", ".html", ".htm", ".css", ".sql", ".csv", ".tsv", ".md", ".markdown", ".rst",
     "package.json", "**/package.json",
 )
@@ -80,7 +79,7 @@ FILES_TO_ALWAYS_CHECK = {
 }
 
 # Always skip .gitignore itself from output
-SKIP_ALWAYS = {".gitignore", "pnpm-lock.yaml", "package.json", "tsconfig.json", ".eslintrc.js", ".prettierrc.js", ".env"}
+SKIP_ALWAYS = {".gitignore", "pnpm-lock.yaml", "package.json", "tsconfig.json", ".eslintrc.js", ".prettierrc.js", ".env",".tap","bun.lock", "LICENSE", "eslint.config.js", ".prettierrc",".prettierignore","package-lock.json"}
 
 LANGUAGE_HINTS = {
     ".py": "python", ".js": "javascript", ".ts": "typescript", ".jsx": "jsx", ".tsx": "tsx",
@@ -192,7 +191,9 @@ class Config:
 
         # --- Default Pattern Overrides --- 
         self.override_defaults: Dict[str, bool] = {
+            # Added missing .json override
             ".json": args.include_json,
+            ".jsonc": args.include_json, # Map jsonc to json flag
             ".yaml": args.include_yaml,
             ".yml": args.include_yaml, # Map yml to yaml flag
             ".xml": args.include_xml,
@@ -213,7 +214,10 @@ class Config:
 
     def should_override_default_exclude(self, suffix: str) -> bool:
         """Check if a default exclusion pattern matching this suffix is overridden by a flag."""
-        return suffix in self.override_defaults
+        # Check if the specific suffix override is True
+        if suffix in self.override_defaults and self.override_defaults[suffix]:
+            return True
+        return False
 
 class FileFilter:
     """Determines if a file should be included based on Config."""
@@ -222,7 +226,7 @@ class FileFilter:
         self.gitignore_matcher: Optional[Callable[[Path], bool]] = None
         self.git_tracked_files: Optional[Set[str]] = None # Relative paths
 
-        # --- Determine Git handling mode --- 
+        # --- Determine Git handling mode ---
         # Mode 1: Full Git (Default) - Use tracking and .gitignore
         # Mode 2: Gitignore Only (--gitignore-only) - Use .gitignore, ignore tracking
         # Mode 3: No Git (--no-gitignore) - Ignore both
@@ -247,98 +251,119 @@ class FileFilter:
         else:
             self.gitignore_matcher = lambda _: False # No .gitignore file or not needed
 
+        # --- Get Git Tracked Files if needed (Mode 1) ---
+        if use_git_tracking:
+            self.git_tracked_files = get_git_tracked_files(config.root_dir)
+
 
     def should_include(self, abs_path: Path) -> Tuple[bool, str]:
         """Checks if a file should be included. Returns (include_bool, reason_string)."""
         filename = abs_path.name
-        rel_path_str = str(abs_path.relative_to(self.config.root_dir))
+        try:
+            # Handle potential ValueError if path isn't relative (shouldn't happen with rglob)
+            rel_path_str = str(abs_path.relative_to(self.config.root_dir))
+        except ValueError:
+             return False, f"Excluded: Path '{abs_path}' not relative to root '{self.config.root_dir}'"
         rel_path_posix = rel_path_str.replace(os.sep, '/')
 
-        # --- Determine Git Mode for this check --- 
+        # --- Determine Git Mode for this check ---
+        # Use pre-calculated git_tracked_files if available (Mode 1)
         use_full_git = not self.config.no_gitignore and not self.config.gitignore_only and self.git_tracked_files is not None
         use_gitignore_parsing = not self.config.no_gitignore and self.gitignore_matcher is not None
 
-        # 0. Always Check Files (Highest Priority)
-        if filename in FILES_TO_ALWAYS_CHECK:
-            if self.config.max_size is not None and abs_path.stat().st_size > self.config.max_size:
-                 return False, f"Excluded: Always-check file '{filename}' exceeded max size"
-            if not self.config.include_binary and is_likely_binary_file(abs_path):
-                 return False, f"Excluded: Always-check file '{filename}' is binary"
-            return True, f"Included: Explicitly always checked ('{filename}')"
+        # --- Filtering Steps (with priority) ---
+
+        # 0. Explicit CLI Includes (Highest Override, except for size/binary)
+        for pattern in self.config.included_patterns:
+            if fnmatch.fnmatch(filename, pattern) or fnmatch.fnmatch(rel_path_posix, pattern):
+                if self.config.max_size is not None and abs_path.stat().st_size > self.config.max_size:
+                     return False, f"Excluded: CLI included file '{filename}' exceeded max size"
+                if not self.config.include_binary and is_likely_binary_file(abs_path):
+                     return False, f"Excluded: CLI included file '{filename}' is binary"
+                # Note: CLI Include does NOT override excluded dirs or always_skip
+                in_excluded_dir = any(part in self.config.excluded_dirs for part in abs_path.relative_to(self.config.root_dir).parts[:-1])
+                if in_excluded_dir:
+                    return False, f"Excluded: CLI included file '{filename}' is within an excluded directory"
+                if filename in SKIP_ALWAYS:
+                    return False, f"Excluded: CLI included file '{filename}' is in SKIP_ALWAYS"
+
+                return True, f"Included: Matched CLI include pattern for '{filename}'"
 
         # 1. Always Skip Files
         if filename in SKIP_ALWAYS:
              return False, f"Excluded: Explicitly always skipped ('{filename}')"
 
-        # 2. Explicit Exclude Patterns (e.g., 'package.json', '*.log')
+        # 2. Excluded Directories (Applies to all items within)
+        rel_parts = abs_path.relative_to(self.config.root_dir).parts
+        # Check parent parts for directory exclusion
+        if any(part in self.config.excluded_dirs for part in rel_parts[:-1]):
+             return False, f"Excluded: Part of excluded directory tree ('{rel_path_posix}')"
+
+        # 3. Explicit CLI Exclude Patterns
         for pattern in self.config.excluded_patterns:
-            if fnmatch.fnmatch(filename, pattern) or fnmatch.fnmatch(rel_path_posix, pattern): 
-                return False, f"Excluded: Matched exclude pattern for '{filename}'"
+            if fnmatch.fnmatch(filename, pattern) or fnmatch.fnmatch(rel_path_posix, pattern):
+                return False, f"Excluded: Matched CLI exclude pattern for '{filename}'"
 
-        # 3. Excluded Directories (e.g., 'node_modules', '.git')
-        is_in_excluded_dir = False
-        for excluded_dir_pattern in self.config.excluded_dirs:
-            try:
-                 if excluded_dir_pattern in rel_path_str.split(os.sep):
-                    is_in_excluded_dir = True
-                    break
-            except Exception as e:
-                 logging.error(f"Error checking excluded dir '{excluded_dir_pattern}' for path '{rel_path_str}': {e}")
-
-        if is_in_excluded_dir:
-            return False, f"Excluded: Part of default excluded directory ('{excluded_dir_pattern}' in '{rel_path_posix}')"
-
-        # 4. Git Ignore Check
+        # 4. Git Ignore Check (Modes 1 & 2)
         if use_gitignore_parsing:
             if self.gitignore_matcher(abs_path): # type: ignore
-                 return False, f"Excluded: Matched .gitignore pattern for '{rel_path_posix}'"
+                 # Check if this file is *specifically* included by CLI despite gitignore
+                 is_cli_included = False
+                 for pattern in self.config.included_patterns:
+                     if fnmatch.fnmatch(filename, pattern) or fnmatch.fnmatch(rel_path_posix, pattern):
+                         is_cli_included = True
+                         break
+                 if not is_cli_included:
+                     return False, f"Excluded: Matched .gitignore pattern for '{rel_path_posix}'"
+                 # If CLI included, fall through to check other conditions like binary/size
 
-        # 5. Git Tracking Check
+        # 5. Git Tracking Check (Mode 1 Only)
         if use_full_git:
-            is_tracked = rel_path_str in self.git_tracked_files # type: ignore
+            is_tracked = rel_path_posix in self.git_tracked_files # type: ignore
             if not is_tracked:
-                 return False, f"Excluded: Not tracked by git ('{rel_path_posix}')"
-            suffix = abs_path.suffix.lower()
-            if suffix and any(fnmatch.fnmatch(filename, pattern) for pattern in DEFAULT_EXCLUDED_PATTERNS):
-                if not self.config.should_override_default_exclude(suffix):
-                     return False, f"Excluded: Matched default pattern ('{suffix}') for tracked file '{filename}'"
-            return True, f"Included: Tracked by git, passed filters ('{rel_path_posix}')"
+                 # Allow if explicitly included by CLI or always_check
+                 is_cli_included = any(fnmatch.fnmatch(filename, p) or fnmatch.fnmatch(rel_path_posix, p) for p in self.config.included_patterns)
+                 is_always_check = filename in FILES_TO_ALWAYS_CHECK
+                 if not is_cli_included and not is_always_check:
+                     return False, f"Excluded: Not tracked by git ('{rel_path_posix}')"
+                 # If CLI included or always_check, fall through
 
-        # 6. Explicit CLI Includes
-        for pattern in self.config.included_patterns:
-            if fnmatch.fnmatch(filename, pattern) or fnmatch.fnmatch(rel_path_posix, pattern): 
-                if self.config.max_size is not None and abs_path.stat().st_size > self.config.max_size:
-                     return False, f"Excluded: CLI included file '{filename}' exceeded max size"
-                if not self.config.include_binary and is_likely_binary_file(abs_path):
-                     return False, f"Excluded: CLI included file '{filename}' is binary"
-                return True, f"Included: Matched CLI include pattern for '{filename}'"
+        # --- Checks for files that passed initial filters or were forced through ---
 
-        # 7. Size Limit
+        # 6. Size Limit
         if self.config.max_size is not None and abs_path.stat().st_size > self.config.max_size:
              return False, f"Excluded: Exceeded max size ({abs_path.stat().st_size} > {self.config.max_size}) for '{filename}'"
 
-        # 8. Binary Files
+        # 7. Binary Files
         if not self.config.include_binary and is_likely_binary_file(abs_path):
              return False, f"Excluded: Likely binary file ('{filename}')"
 
-        # 9. Default Pattern Exclusions
+        # 8. Default Pattern Exclusions (Applies unless overridden)
         suffix = abs_path.suffix.lower()
+        is_default_excluded = False
         if suffix:
-            if any(fnmatch.fnmatch(filename, pattern) for pattern in self.config.excluded_patterns if pattern.startswith('*.')):
-                 return False, f"Excluded: Matched default pattern for suffix '{suffix}'"
+            # Check against the original DEFAULT_EXCLUDED_PATTERNS list
+            for pattern in DEFAULT_EXCLUDED_PATTERNS:
+                if fnmatch.fnmatch(filename, pattern):
+                    is_default_excluded = True
+                    break
+        # Check if the override flag for this suffix is set to True in Config
+        if is_default_excluded and not self.config.should_override_default_exclude(suffix):
+            # Only exclude if it matches a default pattern AND is NOT overridden
+            # Allow if explicitly included by CLI or always_check
+            is_cli_included = any(fnmatch.fnmatch(filename, p) or fnmatch.fnmatch(rel_path_posix, p) for p in self.config.included_patterns)
+            is_always_check = filename in FILES_TO_ALWAYS_CHECK
+            if not is_cli_included and not is_always_check:
+                return False, f"Excluded: Matched default pattern ('{suffix}') for '{filename}'"
 
-        # 10. Fallback to Always Check Files
+        # 9. Always Check Files (Final check if it wasn't excluded earlier)
         if filename in FILES_TO_ALWAYS_CHECK:
-            if filename == "README.md" and abs_path.parent != self.config.root_dir:
-                 pass
-            else:
-                 return True, f"Included: Explicitly always checked ('{filename}')"
+            # It passed size/binary checks if we got here
+            return True, f"Included: Explicitly always checked ('{filename}')"
 
-        # --- Default Behaviour --- 
-        is_binary = is_likely_binary_file(abs_path)
-        if is_binary and not self.config.include_binary:
-             return False, f"Excluded: Binary file ('{filename}')"
-        return True, f"Included: Default (likely text or binary allowed for '{filename}')"
+        # --- Default Behaviour (Include if not excluded by any rule above) ---
+        return True, f"Included: Default (passed all filters for '{filename}')"
+
 
 class ProjectScanner:
     """Scans the project, filters files, reads content, and gathers stats."""
@@ -346,48 +371,51 @@ class ProjectScanner:
         self.config = config
         self.filter = file_filter
         self.included_files_data: List[Dict[str, Any]] = []
-        self.all_paths_walked: Set[Path] = set()
-        self.scanned_item_count = 0
         self.excluded_files_count = 0 # Count only excluded files
         self.total_lines = 0
         self.total_chars = 0
+        self.scanned_item_count = 0 # Renamed for clarity
 
     def scan(self):
         """Performs the directory scan and filtering."""
         start_time = time.time()
         included_paths_temp = []
+        scanned_count_local = 0 # Use local counter during iteration
 
-        for abs_path in self.config.root_dir.rglob("*"):
-            self.scanned_item_count += 1
-            resolved_path = abs_path.resolve()
-            self.all_paths_walked.add(resolved_path)
+        for item in self.config.root_dir.rglob("*"):
+            scanned_count_local += 1
+            if item.is_symlink(): # Skip symlinks early
+                continue
 
-            is_included, reason = self.filter.should_include(abs_path)
+            # Check if item is within an explicitly excluded directory (optimization)
+            try:
+                 rel_parts = item.relative_to(self.config.root_dir).parts
+                 if any(part in self.config.excluded_dirs for part in rel_parts[:-1]):
+                     continue # Skip processing items inside excluded dirs
+            except ValueError:
+                 continue # Skip if path isn't relative (should not happen with rglob)
 
-            # Only include files that are not in excluded directories
-            if is_included and abs_path.is_file():
-                # Check if any parent directory is in excluded_dirs
-                rel_parts = abs_path.relative_to(self.config.root_dir).parts
-                if any(part in self.config.excluded_dirs for part in rel_parts):
-                    continue  # Skip files in excluded directories
-                included_paths_temp.append(abs_path)
-            elif abs_path.is_file():
-                self.excluded_files_count += 1
+            if item.is_file():
+                 is_included, reason = self.filter.should_include(item)
+                 # logging.debug(f"File: {item.relative_to(self.config.root_dir)} -> Included: {is_included}, Reason: {reason}") # Optional debug log
+                 if is_included:
+                     included_paths_temp.append(item)
+                 else:
+                     self.excluded_files_count += 1
+            # We don't explicitly handle directories here anymore, tree builder does
 
-        # Sort included files
-        included_paths_temp.sort(key=lambda p: (
-            len(p.relative_to(self.config.root_dir).parent.parts),
-            p.relative_to(self.config.root_dir).parent.parts,
-            p.suffix.lower(),
-            p.name
-        ))
+        self.scanned_item_count = scanned_count_local # Update class member at the end
+
+        # Sort included files (consider a more sophisticated sort later if needed)
+        included_paths_temp.sort(key=lambda p: str(p.relative_to(self.config.root_dir)))
 
         # Read content and calculate stats for included files
         read_start_time = time.time()
         temp_file_data = [] # Temporary list before adding percentage
         for path in included_paths_temp:
             try:
-                if path.is_file(): # Only read if it's actually a file
+                # Double check it's a file, though it should be from the filtering logic
+                if path.is_file():
                     content = path.read_text(encoding='utf-8', errors='ignore')
                     lines = content.count('\n') + 1 if content else 0
                     chars = len(content)
@@ -399,19 +427,20 @@ class ProjectScanner:
                         "lines": lines,
                         "chars": chars,
                         "content": content,
-                        "language_hint": get_language_hint(path.name) # Add hint here
+                        "language_hint": get_language_hint(path.name), # Add hint here
+                        "included": True # Mark as included based on filter decision
                     })
-                elif path.is_dir():
-                     # Optionally log skipped directories, or just pass
-                     pass
-                else:
-                    print(f"Warning: Skipping non-file/non-directory item: {path}", file=sys.stderr)
-
             except Exception as e:
                 print(f"Warning: Could not read file {path.name}: {e}. Skipping content.", file=sys.stderr)
                 # Add placeholder data if read fails but file was intended to be included
                 temp_file_data.append({
-                     "absolute_path": path, 'lines': 0, 'chars': 0, 'content': f"# Error reading file: {e}", 'language_hint': 'plaintext'
+                     "absolute_path": path,
+                     "relative_path": path.relative_to(self.config.root_dir),
+                     'lines': 0,
+                     'chars': 0,
+                     'content': f"# Error reading file: {e}",
+                     'language_hint': 'plaintext',
+                     "included": True # Still mark as included intent
                 })
 
         # Now calculate percentages and populate final list
@@ -420,20 +449,18 @@ class ProjectScanner:
             file_data['percentage'] = percentage
             self.included_files_data.append(file_data) # Add to the final list
 
-        # read_time = time.time() - read_start_time
-        # filter_time = read_start_time - start_time
+        read_time = time.time() - read_start_time
+        filter_time = read_start_time - start_time
 
-        # Suppress info logs to stdout/stderr
-        # print(f"Info: Scanned {self.scanned_item_count} filesystem items. Filtered out {self.excluded_files_count} files.", file=sys.stderr)
-        # print(f"Info: Found {len(self.included_files_data)} files to include.", file=sys.stderr)
-        # print(f"Timing: Filtering: {filter_time:.3f}s, Reading: {read_time:.3f}s", file=sys.stderr)
+        logging.info(f"Scan complete. Scanned: {self.scanned_item_count}, Included: {len(self.included_files_data)}, Excluded Files: {self.excluded_files_count}")
+        logging.info(f"Timing: Filtering: {filter_time:.3f}s, Reading: {read_time:.3f}s")
 
     def get_data(self) -> Dict[str, Any]:
         """Returns the collected scan data."""
         return {
+            "config": self.config, # Pass config through
             "root_dir_abs": self.config.root_dir,
-            "included_files": self.included_files_data,
-            "all_paths_walked": self.all_paths_walked,
+            "included_files": self.included_files_data, # Files that passed filter and were read
             "total_included_files": len(self.included_files_data),
             "total_included_lines": self.total_lines,
             "total_included_chars": self.total_chars,
@@ -442,98 +469,112 @@ class ProjectScanner:
 
 
 class TreeBuilder:
-    """Builds the formatted project tree string."""
-    def __init__(self, root_dir: Path, config: Config, included_paths: Set[Path], file_stats: Dict[Path, Dict[str, Any]]):
+    """Builds the tree structure and optionally formats it."""
+    def __init__(self, root_dir: Path, config: Config, included_files_data: List[Dict]):
         self.root_dir = root_dir
         self.config = config
-        self.included_paths = included_paths # Final set of files to include
-        self.file_stats = file_stats # Pre-calculated stats for included files
-        # Pre-calculate relative paths for included files for faster lookup
-        self.included_relative_paths = {p.relative_to(root_dir) for p in included_paths}
+        # Use the detailed file data which includes stats and relative path
+        self.included_files_map: Dict[Path, Dict] = {
+            data['relative_path']: data for data in included_files_data
+        }
+        # Set of included relative paths for quick lookup
+        self.included_relative_paths: Set[Path] = set(self.included_files_map.keys())
 
-    def _is_dir_explicitly_excluded(self, path: Path) -> bool:
-        "Check if a directory path itself matches an excluded_dirs pattern."""
-        relative_path = path.relative_to(self.root_dir)
+    def _is_dir_explicitly_excluded(self, relative_path: Path) -> bool:
+        """Check if a directory's name matches an excluded_dirs pattern."""
         # Check if any part of the path *is* an excluded directory name
         for part in relative_path.parts:
             if part in self.config.excluded_dirs:
                 return True
-        # Check if the path itself matches a pattern (less common for dirs, but possible)
-        for pattern in self.config.excluded_dirs:
-             if fnmatch.fnmatch(path.name, pattern): # Basic name match
-                  return True
-             # Could add glob matching here if needed: path.match(pattern)
+        # Check base name against patterns too (less common)
+        # for pattern in self.config.excluded_dirs:
+        #    if fnmatch.fnmatch(relative_path.name, pattern):
+        #        return True
         return False
 
     def _build_tree_recursive(self, current_path: Path) -> List[Dict[str, Any]]:
-        tree = []
+        """Builds the hierarchical structure."""
+        tree_nodes = []
         try:
-            for item in sorted(current_path.iterdir(), key=lambda p: (p.is_file(), p.name.lower())):
-                # Skip symlinks to avoid cycles and potential issues
+            # Sort items: directories first, then files, then by name
+            sorted_items = sorted(
+                current_path.iterdir(),
+                key=lambda p: (p.is_file(), p.name.lower())
+            )
+
+            for item in sorted_items:
                 if item.is_symlink():
                     continue
 
                 relative_path = item.relative_to(self.root_dir)
                 node: Dict[str, Any] = {'name': item.name, 'path': relative_path}
-                is_explicitly_excluded_dir = self._is_dir_explicitly_excluded(item)
+
+                is_dir_excluded_by_name = self._is_dir_explicitly_excluded(relative_path)
 
                 if item.is_dir():
-                    # Recurse first to get children structure
-                    children = self._build_tree_recursive(item)
-                    node['children'] = children
-                    
-                    # --- Directory Exclusion/Inclusion Logic ---
-                    if is_explicitly_excluded_dir:
+                    # If dir name itself is excluded, skip recursion entirely
+                    if is_dir_excluded_by_name:
                         node['included'] = False
-                        # --- CASCADE EXCLUSION --- 
-                        # Force all children to be excluded as well
-                        for child in children:
-                            self._force_exclude_recursive(child)
-                        # --- END CASCADE --- 
+                        node['children'] = [] # No need to show children of excluded dir
                     else:
-                        # Mark included if it OR any *already determined* included descendant exists
+                        children = self._build_tree_recursive(item)
+                        node['children'] = children
+                        # A directory is included if it wasn't excluded by name AND
+                        # it contains any included children (files or subdirs)
                         node['included'] = any(c.get('included', False) for c in children)
-                        # Also check if the directory *itself* might contain directly included files
-                        if not node['included']:
-                             # Check if any directly included file has this dir as parent
-                             node['included'] = any(p.parent == relative_path for p in self.included_relative_paths)
-
                 elif item.is_file():
-                    # --- File Inclusion Logic --- 
-                    # Check if this specific file is in the final included set
-                    # AND if its parent directory was NOT explicitly excluded
-                    node['included'] = relative_path in self.included_relative_paths
-                    # Note: Cascading exclusion for files happens via parent directory check above
-                    
+                    # File inclusion is determined by whether it's in our map
+                    node['included'] = relative_path in self.included_files_map
                     if node['included']:
-                        stats = self.file_stats.get(item)
-                        if stats:
-                            node['lines'] = stats.get('lines', 0)
-                            node['chars'] = stats.get('chars', 0)
-                            node['percentage'] = stats.get('percentage', 0.0)
-                        else:
-                             # Should not happen if file_stats is built correctly
-                             logging.warning(f"Stats not found for included file: {item}")
-                             node['lines'], node['chars'], node['percentage'] = 0, 0, 0.0
-                    else:
-                         node['lines'], node['chars'], node['percentage'] = 0, 0, 0.0
+                        # Copy stats from the map
+                        file_data = self.included_files_map[relative_path]
+                        node['lines'] = file_data.get('lines', 0)
+                        node['chars'] = file_data.get('chars', 0)
+                        node['percentage'] = file_data.get('percentage', 0.0)
 
-                tree.append(node)
+                # Only add the node to the tree if it's included OR if it's a directory
+                # (We might show empty included dirs, or excluded dirs if needed later)
+                # For now, let's simplify: only add if included
+                # Revision: We need the structure, filter display later
+                tree_nodes.append(node)
 
         except OSError as e:
             logging.warning(f"Could not read directory {current_path}: {e}")
-            tree.append({'name': f"[Error reading: {e}]", 'included': False})
+            tree_nodes.append({'name': f"[Error reading: {e}]", 'path': current_path.relative_to(self.root_dir), 'included': False})
 
-        return tree
+        return tree_nodes
 
-    def _force_exclude_recursive(self, node: Dict[str, Any]):
-        """Recursively set included=False for a node and its children."""
-        node['included'] = False
-        if 'children' in node:
-            for child in node['children']:
-                self._force_exclude_recursive(child)
+    def build_structure(self) -> List[Dict[str, Any]]:
+        """Builds and returns the raw tree structure."""
+        logging.info("Building tree structure...")
+        start_time = time.time()
+        structure = self._build_tree_recursive(self.root_dir)
+        build_time = time.time() - start_time
+        logging.info(f"Tree structure build completed in {build_time:.3f} seconds.")
+        return structure
 
-    def _format_tree_recursive(self, nodes: List[Dict[str, Any]], indent: str = '', is_last_list: List[bool] = None) -> List[str]:
+
+class MarkdownFormatter:
+    """Formats the collected data into Markdown strings."""
+    # --- New constants for blocks ---
+    BLOCK_CHAR = "🔲"
+    MAX_BLOCKS = 10 # Max blocks for 100%
+
+    def __init__(self, scan_data: Dict, tree_structure: List[Dict[str, Any]]):
+        self.scan_data = scan_data # Keep original for reference if needed
+        self.tree_structure = tree_structure # The final tree with correct 'included' flags
+        self.config = scan_data['config']
+        # Stats are now directly from scan_data (calculated during scan)
+        self.final_stats = {
+            'total_files': scan_data['total_included_files'],
+            'total_lines': scan_data['total_included_lines'],
+            'total_chars': scan_data['total_included_chars'],
+            'scanned_count': scan_data['scanned_count'],
+        }
+
+    # --- New recursive formatter for summary ---
+    def _format_tree_for_summary_recursive(self, nodes: List[Dict[str, Any]], indent: str = '', is_last_list: Optional[List[bool]] = None) -> List[str]:
+        """Recursively formats the tree structure WITH percentage blocks for summary output."""
         if is_last_list is None:
             is_last_list = []
 
@@ -541,105 +582,114 @@ class TreeBuilder:
         for i, node in enumerate(nodes):
             is_last = (i == len(nodes) - 1)
             marker = GLYPH_LAST if is_last else GLYPH_CHILD
-            
-            # Determine the correct prefix based on indentation level
             prefix = indent + marker + ' '
 
             is_included = node.get('included', False)
-            # Status marker
             status_marker = '✅' if is_included else '❌'
 
-            # Format based on whether it's a file or directory
-            if 'children' in node: # It's a directory
-                if not is_included:
-                    # --- Display Excluded Directory --- 
-                    lines.append(f"{prefix}{node['name']} {status_marker}")
-                    # --- Skip Children --- 
-                    continue # Don't recurse/print children for excluded dirs
-                else:
-                    # Included directory (or contains included files)
-                    lines.append(f"{prefix}{node['name']} {status_marker}")
-                    # Calculate indentation for children
+            if 'children' in node: # Directory
+                # Only display directory node if it's included itself OR contains included items
+                # (This hides empty excluded directories)
+                # Revision: Show all dirs for structure, but mark excluded
+                lines.append(f"{prefix}{node['name']} {status_marker}")
+                if is_included or any(c.get('included') for c in node.get('children', [])):
                     child_indent = indent + (GLYPH_INDENT_LAST if is_last else GLYPH_INDENT_CHILD) + ' '
-                    lines.extend(self._format_tree_recursive(node['children'], child_indent, is_last_list + [is_last]))
+                    lines.extend(self._format_tree_for_summary_recursive(node['children'], child_indent, is_last_list + [is_last]))
+                # else: # Skip children of fully excluded dirs
+
             else: # It's a file
+                if not is_included:
+                     # Optionally show excluded files with ❌ marker if needed
+                     # lines.append(f"{prefix}{node['name']} {status_marker}")
+                     continue # Skip excluded files for summary display
+
+                # File is included
                 stats_str = ""
-                if is_included:
-                    stats = f" ({node.get('lines', 0):,}L, {node.get('chars', 0):,}C) [~{node.get('percentage', 0.0):.2f}%]"
-                    stats_str = stats
-                lines.append(f"{prefix}{node['name']} {status_marker}{stats_str}")
+                blocks_str = "" # Initialize blocks string
+                percentage = node.get('percentage', 0.0)
+                stats = f" ({node.get('lines', 0):,}L, {node.get('chars', 0):,}C) [~{percentage:.2f}%]"
+                stats_str = stats
+
+                # --- Add Block Calculation ---
+                if percentage > 0.1: # Add threshold to avoid single blocks for tiny files
+                    # Scale percentage slightly for better visual distribution
+                    scaled_percentage = min(100, percentage * 1.1) # Example scaling
+                    num_blocks = round(scaled_percentage / 100.0 * self.MAX_BLOCKS)
+                    num_blocks = max(1, num_blocks) # Ensure at least one block if > threshold
+                    if num_blocks > 0:
+                        blocks_str = f" {self.BLOCK_CHAR * num_blocks}"
+                # --- End Block Calculation ---
+
+                # Append line with stats and potentially blocks
+                lines.append(f"{prefix}{node['name']} {status_marker}{stats_str}{blocks_str}")
 
         return lines
 
-    def build_and_format(self) -> str:
-        """Builds the tree and returns the formatted string representation."""
-        logging.info("Building tree structure...")
-        start_time = time.time()
-        # Build the tree structure starting from the root
-        tree_structure = self._build_tree_recursive(self.root_dir)
-        
-        # Check if root itself contains any included files/dirs
-        is_root_included = any(n.get('included', False) for n in tree_structure) or \
-                           any(p.parent == Path('.') for p in self.included_relative_paths)
-                           
-        # Format the structure into lines
-        tree_lines = ["." + (" " if is_root_included else " ") + ""] # Root marker
-        tree_lines.extend(self._format_tree_recursive(tree_structure))
-        tree_string = "\n".join(tree_lines)
-        build_time = time.time() - start_time
-        logging.info(f"Tree building completed in {build_time:.3f} seconds.")
-        return tree_string
+    # --- New method to generate the plain tree for LLM context ---
+    def _format_tree_plain_recursive(self, nodes: List[Dict[str, Any]], indent: str = '', is_last_list: Optional[List[bool]] = None) -> List[str]:
+        """Recursively formats the tree structure WITHOUT blocks for main output."""
+        if is_last_list is None:
+            is_last_list = []
 
+        lines = []
+        for i, node in enumerate(nodes):
+            is_last = (i == len(nodes) - 1)
+            marker = GLYPH_LAST if is_last else GLYPH_CHILD
+            prefix = indent + marker + ' '
 
-class MarkdownFormatter:
-    """Formats the collected data into Markdown strings."""
-    def __init__(self, scan_data: Dict, tree_string: str, tree_structure: List[Dict[str, Any]]):
-        self.scan_data_original = scan_data # Keep original for reference if needed
-        self.tree_string = tree_string
-        self.tree_structure = tree_structure # The final tree with correct 'included' flags
-        self.config = scan_data['config']
-        
-        # --- Recalculate Stats based on final tree --- 
-        self.final_stats = self._calculate_final_stats(self.tree_structure)
+            is_included = node.get('included', False)
+            status_marker = '✅' if is_included else '❌'
 
-    def _calculate_final_stats_recursive(self, nodes: List[Dict[str, Any]], stats: Dict[str, Any]):
-        """Helper to traverse tree and sum stats for included files."""
-        for node in nodes:
-            if node.get('included', False):
-                if 'children' in node: # Directory
-                    self._calculate_final_stats_recursive(node['children'], stats)
-                else: # File
-                    stats['total_files'] += 1
-                    stats['total_lines'] += node.get('lines', 0)
-                    stats['total_chars'] += node.get('chars', 0)
+            if 'children' in node: # Directory
+                lines.append(f"{prefix}{node['name']} {status_marker}")
+                # Always recurse for structure, even if dir itself isn't marked included initially
+                child_indent = indent + (GLYPH_INDENT_LAST if is_last else GLYPH_INDENT_CHILD) + ' '
+                lines.extend(self._format_tree_plain_recursive(node['children'], child_indent, is_last_list + [is_last]))
+            else: # It's a file
+                 # Only show included files in the plain tree for LLM
+                 if is_included:
+                     stats_str = ""
+                     stats = f" ({node.get('lines', 0):,}L, {node.get('chars', 0):,}C) [~{node.get('percentage', 0.0):.2f}%]"
+                     stats_str = stats
+                     lines.append(f"{prefix}{node['name']} {status_marker}{stats_str}")
+                 # else: skip excluded files in plain output
 
-    def _calculate_final_stats(self, tree_structure: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Calculate final summary stats based on the tree's included nodes."""
-        final_stats = {
-            'total_files': 0,
-            'total_lines': 0,
-            'total_chars': 0
-        }
-        self._calculate_final_stats_recursive(tree_structure, final_stats)
-        # Add original scanned count for context
-        final_stats['scanned_count'] = self.scan_data_original.get('scanned_count', 0)
-        return final_stats
+        return lines
+
+    def _generate_plain_tree_string(self) -> str:
+        """Generates the plain tree string without blocks."""
+        is_root_included = any(n.get('included', False) for n in self.tree_structure) or \
+                           any(f['relative_path'].parent == Path('.') for f in self.scan_data['included_files'])
+        root_marker = "." + (" ✅" if is_root_included else " ❌")
+        tree_lines_plain = [root_marker]
+        tree_lines_plain.extend(self._format_tree_plain_recursive(self.tree_structure))
+        return "\n".join(tree_lines_plain)
 
     def format_summary(self) -> str:
-        """Generates the summary Markdown (tree + stats)."""
-        import os
+        """Generates the summary Markdown (tree + stats) WITH blocks."""
         home = str(Path.home())
         display_dir = str(self.config.root_dir)
         if display_dir.startswith(home):
             display_dir = display_dir.replace(home, "~", 1)
+
+        # --- Generate Tree with Blocks ---
+        is_root_included = any(n.get('included', False) for n in self.tree_structure) or \
+                           any(f['relative_path'].parent == Path('.') for f in self.scan_data['included_files'])
+        root_marker = "." + (" ✅" if is_root_included else " ❌") # Add marker to root
+        tree_lines_with_blocks = [root_marker]
+        tree_lines_with_blocks.extend(self._format_tree_for_summary_recursive(self.tree_structure))
+        tree_string_with_blocks = "\n".join(tree_lines_with_blocks)
+        # --- End Generate Tree with Blocks ---
+
         lines = [
             "# Project Structure & Statistics",
             f"*Directory: {display_dir}*",
-            "Legend:  = ✅ Included File | 📁❌ = Excluded/Filtered Files",
+            # Updated Legend
+            f"Legend: ✅=Included, ❌=Excluded, {self.BLOCK_CHAR}=% Size Contribution (Max {self.MAX_BLOCKS}, Threshold >0.1%)",
             "",
             "## Project Tree & Statistics",
             "```",
-            self.tree_string,
+            tree_string_with_blocks, # Use the tree with blocks
             "```",
             "",
             "**Summary Statistics (Included Items):**",
@@ -651,8 +701,35 @@ class MarkdownFormatter:
         return "\n".join(lines)
 
     def format_full(self) -> str:
-        """Generates the full Markdown output string including file content, sorted as per custom rules."""
-        lines = self.format_summary().splitlines()
+        """Generates the full Markdown output string including file content."""
+        home = str(Path.home())
+        display_dir = str(self.config.root_dir)
+        if display_dir.startswith(home):
+            display_dir = display_dir.replace(home, "~", 1)
+
+        # --- Generate the PLAIN tree string for the full output ---
+        plain_tree_string = self._generate_plain_tree_string()
+
+        # --- Construct Header using PLAIN tree ---
+        header_lines = [
+            "# Project Context", # Simplified title for LLM
+            f"*Directory: {display_dir}*",
+            # Simpler legend for LLM context
+            "Legend: ✅=Included File/Dir, ❌=Excluded/Filtered",
+            "",
+            "## Project Tree", # Simplified section title
+            "```",
+            plain_tree_string, # Use the plain tree string
+            "```",
+            "",
+            "**Summary Statistics (Included Items):**",
+            f"*   Files: {self.final_stats['total_files']:,}",
+            f"*   Lines: {self.final_stats['total_lines']:,}",
+            f"*   Characters: {self.final_stats['total_chars']:,} (~{self.final_stats['total_chars']/1024:.1f} kB)",
+            ""
+        ]
+        lines = header_lines
+        # --- End Header ---
 
         # Add Content Section Header
         lines.append("---") # Separator
@@ -660,58 +737,71 @@ class MarkdownFormatter:
         lines.append("## Selected File Content")
         lines.append("")
 
-        included_files = self.scan_data_original['included_files']
+        # Get included files data from scan_data
+        included_files = self.scan_data['included_files']
         root_dir = self.config.root_dir
 
-        # Build a mapping from relative path to file data for fast lookup
-        file_map = {str(f['relative_path']): f for f in included_files}
-
-        # Helper: recursively sort and yield files in a folder
+        # --- Sorting Logic (same as before) ---
         from collections import defaultdict
-        def sort_folder(current_path: Path):
-            # Group direct files and subfolders
-            direct_files = []
-            subfolders = defaultdict(list)
-            for f in included_files:
-                rel = f['relative_path']
-                parts = rel.parts
-                if len(parts) == len(current_path.parts) + 1 and rel.parts[:len(current_path.parts)] == current_path.parts:
-                    direct_files.append(f)
-                elif len(parts) > len(current_path.parts) + 1 and rel.parts[:len(current_path.parts)] == current_path.parts:
-                    subfolders[rel.parts[len(current_path.parts)]].append(f)
+        def sort_folder(current_path: Path, files_in_folder: List[Dict]):
+            direct_files = [f for f in files_in_folder if f['relative_path'].parent == current_path]
+            subfolder_map = defaultdict(list)
+            for f in files_in_folder:
+                if f['relative_path'].parent != current_path and f['relative_path'].parts[:len(current_path.parts)] == current_path.parts:
+                     if len(f['relative_path'].parts) > len(current_path.parts):
+                         subfolder_name = f['relative_path'].parts[len(current_path.parts)]
+                         subfolder_map[subfolder_name].append(f)
+
             # Sort direct files by line count descending, then name
-            direct_files.sort(key=lambda x: (-x['lines'], x['relative_path']))
+            direct_files.sort(key=lambda x: (-x['lines'], x['relative_path'].name))
             for f in direct_files:
                 yield f
-            # Sort subfolders by total line count descending
-            subfolder_items = list(subfolders.items())
-            subfolder_items.sort(key=lambda kv: -sum(f['lines'] for f in kv[1]))
-            for subfolder, _ in subfolder_items:
-                yield from sort_folder(current_path / subfolder)
 
-        # 1. Root-level .md files first
-        root_md_files = [f for f in included_files if f['absolute_path'].parent == root_dir and str(f['absolute_path'].name).lower().endswith('.md')]
-        root_md_files.sort(key=lambda x: (-x['lines'], x['relative_path']))
-        # 2. Other root files
-        root_other_files = [f for f in included_files if f['absolute_path'].parent == root_dir and not str(f['absolute_path'].name).lower().endswith('.md')]
-        root_other_files.sort(key=lambda x: (-x['lines'], x['relative_path']))
-        # 3. Top-level folders, recursively
-        # Find all top-level folders
-        top_folders = set(f['relative_path'].parts[0] for f in included_files if len(f['relative_path'].parts) > 1)
+            # Sort subfolders by total line count descending
+            subfolder_items = list(subfolder_map.items())
+            subfolder_items.sort(key=lambda kv: -sum(f['lines'] for f in kv[1]))
+            for subfolder_name, files_in_subfolder in subfolder_items:
+                yield from sort_folder(current_path / subfolder_name, files_in_subfolder)
+
+        # Separate files by root vs subdirs
+        root_files = [f for f in included_files if f['relative_path'].parent == Path('.')]
+        subdir_files = [f for f in included_files if f['relative_path'].parent != Path('.')]
+
+        # Prioritize README.md at the very top if present
+        readme_file = next((f for f in root_files if f['relative_path'].name.lower() == 'readme.md'), None)
+        other_root_files = [f for f in root_files if f != readme_file]
+        other_root_files.sort(key=lambda x: (-x['lines'], x['relative_path'].name)) # Sort other root files
+
+        # Group subdir files by top-level folder
+        top_folder_map = defaultdict(list)
+        for f in subdir_files:
+            if f['relative_path'].parts:
+                top_folder_map[f['relative_path'].parts[0]].append(f)
+
         # Sort top-level folders by total line count
-        folder_line_counts = {folder: sum(f['lines'] for f in included_files if len(f['relative_path'].parts) > 1 and f['relative_path'].parts[0] == folder) for folder in top_folders}
-        sorted_folders = sorted(top_folders, key=lambda k: -folder_line_counts[k])
-        # Now yield files in the desired order
-        sorted_files = []
-        sorted_files.extend(root_md_files)
-        sorted_files.extend(root_other_files)
-        for folder in sorted_folders:
-            sorted_files.extend(list(sort_folder(Path(folder))))
-        for file_data in sorted_files:
-            lines.append(f"### `/{file_data['relative_path']}`")
-            lines.append(f"*(Stats: {file_data['lines']} lines, {file_data['chars']} chars [~{file_data['percentage']:.2f}%])* ")
-            lines.append("```" + file_data.get('language_hint', '') + "\n" + file_data['content'] + "\n```")
-            lines.append("") # Add blank line between files
+        sorted_top_folders = sorted(
+            top_folder_map.items(),
+            key=lambda kv: -sum(f['lines'] for f in kv[1])
+        )
+
+        # --- Yield files in the final sorted order ---
+        sorted_files_final = []
+        if readme_file:
+            sorted_files_final.append(readme_file)
+        sorted_files_final.extend(other_root_files)
+        for folder_name, files_in_folder in sorted_top_folders:
+            sorted_files_final.extend(list(sort_folder(Path(folder_name), files_in_folder)))
+        # --- End Sorting ---
+
+        # Append file content
+        for file_data in sorted_files_final:
+             # Ensure we only append files that were actually included
+             if file_data.get('included', False):
+                 lines.append(f"### `/{file_data['relative_path']}`")
+                 lines.append(f"*(Stats: {file_data['lines']} lines, {file_data['chars']} chars [~{file_data['percentage']:.2f}%])* ")
+                 lines.append("```" + file_data.get('language_hint', '') + "\n" + file_data['content'] + "\n```")
+                 lines.append("") # Add blank line between files
+
         return "\n".join(lines).strip()
 
 
@@ -725,66 +815,64 @@ class OutputHandler:
         output_written = False
         error_occurred = False
 
+        # Determine the target for the summary message (stderr unless --stdout is used)
+        summary_target_stream = sys.stdout if self.args.stdout else sys.stderr
+
         # 1. Write to Output File if specified
         if self.args.output:
             try:
                 self.args.output.parent.mkdir(parents=True, exist_ok=True)
                 with open(self.args.output, "w", encoding="utf-8") as f:
                     f.write(full_content)
-                print(f"Success: Generated context written to {self.args.output}", file=sys.stderr)
+                # Print summary with blocks to stderr when writing to file
+                print(summary_content, file=sys.stderr)
+                print(f"\nSuccess: Generated context written to {self.args.output}", file=sys.stderr)
                 output_written = True
             except OSError as e:
                 print(f"Error: Could not write to output file {self.args.output}: {e}", file=sys.stderr)
                 error_occurred = True
 
-        # 2. Print to Stdout if specified
-        if self.args.stdout:
+        # 2. Print full content to Stdout if specified
+        elif self.args.stdout: # Use elif because --output implies not printing full to stdout
             try:
-                print(full_content)
+                print(full_content) # Print full, plain content
                 output_written = True
             except Exception as e:
-                # Handle potential errors like broken pipes
                 print(f"Error: Could not write to stdout: {e}", file=sys.stderr)
                 error_occurred = True
 
         # 3. Copy to Clipboard (Default action if no other output specified)
-        if not output_written and PYPERCLIP_AVAILABLE and not self.args.no_clipboard:
+        elif PYPERCLIP_AVAILABLE and not self.args.no_clipboard: # Use elif
             try:
-                # --- Print to stdout BEFORE copying to clipboard --- 
-                print(summary_content)
-                # --- Now attempt clipboard copy --- 
+                # --- Print summary with blocks to stderr BEFORE copying ---
+                print(summary_content, file=sys.stderr)
+
+                # --- Now attempt clipboard copy with full, plain content ---
                 logging.info("Attempting to copy content to clipboard...")
                 start_time = time.time()
                 pyperclip.copy(full_content)
                 end_time = time.time()
                 logging.info(f"pyperclip.copy() finished in {end_time - start_time:.3f} seconds.")
-                # Verify clipboard content size if possible and log
-                # Note: pyperclip.paste() might be slow/unreliable for large content
-                # try:
-                #    pasted_content = pyperclip.paste()
-                #    logging.info(f"Verification: Intended Chars: {len(full_content)}, Pasted Chars: {len(pasted_content)}")
-                #    if len(full_content) != len(pasted_content):
-                #        logging.warning("Clipboard content length mismatch after copy!")
-                # except Exception as e:
-                #    logging.warning(f"Could not verify clipboard content via paste: {e}")
-                
-                print(f"Success: Generated context ({len(full_content):,} chars) sent to Clipboard.", file=sys.stderr)
+
+                print(f"\nSuccess: Generated context ({len(full_content):,} chars) sent to Clipboard.", file=sys.stderr)
                 output_written = True # Mark as handled
             except Exception as e:
                 logging.error(f"Error copying to clipboard: {e}")
-                print(f"Error: Failed to copy content to clipboard: {e}", file=sys.stderr)
+                print(f"\nError: Failed to copy content to clipboard: {e}", file=sys.stderr)
                 error_occurred = True
 
-        # 4. Fallback to Stdout if no other output method was used
+        # 4. Fallback: If no output method used (e.g., --no-clipboard and no --output/--stdout)
+        #    Print summary with blocks to stderr as the only output.
         if not output_written:
              try:
-                 print(summary_content)
-                 # No success message here, as it's the default fallback
+                 print(summary_content, file=sys.stderr)
+                 # No explicit success message needed here
              except Exception as e:
-                 print(f"Error: Could not write to stdout (fallback): {e}", file=sys.stderr)
+                 print(f"Error: Could not write summary to stderr (fallback): {e}", file=sys.stderr)
                  error_occurred = True
 
-        # --- Final Exit --- 
+
+        # --- Final Exit ---
         # Exit with error code if any issues occurred during output
         if error_occurred:
             sys.exit(1)
@@ -800,11 +888,11 @@ def setup_parser() -> argparse.ArgumentParser:
     # Input/Output
     parser.add_argument("root_dir", nargs="?", type=Path, default=Path("."), help="Root project directory.")
     parser.add_argument("--output", "-o", type=Path, default=None, help="Output file path (writes Markdown).")
-    parser.add_argument("--stdout", action="store_true", help="Print Markdown to stdout.")
+    parser.add_argument("--stdout", action="store_true", help="Print full context (plain tree) to stdout.")
     parser.add_argument("--no-clipboard", action="store_true", help="Do not copy to clipboard.")
     # Filtering
     parser.add_argument("--exclude", action="append", metavar="PATTERN", help="Glob pattern to exclude.")
-    parser.add_argument("--include", action="append", metavar="PATTERN", help="Glob pattern to force include.")
+    parser.add_argument("--include", action="append", metavar="PATTERN", help="Glob pattern to force include (overrides most excludes).")
     parser.add_argument("--exclude-extension", action="append", metavar="EXT", help="File extension to exclude (e.g., '.log').")
     parser.add_argument("--include-extension", action="append", metavar="EXT", help="File extension to force include.")
     parser.add_argument("--max-size", default="2M", metavar="SIZE", help="Max file size (e.g., 500k, 10M). 0 for no limit.")
@@ -814,61 +902,72 @@ def setup_parser() -> argparse.ArgumentParser:
     git_group.add_argument("--no-gitignore", action="store_true", help="Ignore .gitignore and git tracking status.")
     git_group.add_argument("--gitignore-only", action="store_true", help="Use .gitignore for exclusions, but ignore git tracking status.")
 
-    # Default Overrides
-    parser.add_argument("--include-json", action="store_true", help="Include *.json files.")
-    parser.add_argument("--include-yaml", action="store_true", help="Include *.yaml/*.yml files.")
-    parser.add_argument("--include-xml", action="store_true", help="Include *.xml files.")
-    parser.add_argument("--include-html", action="store_true", help="Include *.html/*.htm files.")
-    parser.add_argument("--include-css", action="store_true", help="Include *.css files.")
-    parser.add_argument("--include-sql", action="store_true", help="Include *.sql files.")
-    parser.add_argument("--include-csv", action="store_true", help="Include *.csv/*.tsv files.")
-    parser.add_argument("--include-markdown", action="store_true", help="Include all *.md/*.markdown/*.rst files.") # Grouped related flag
+    # Default Overrides (Clarify help text)
+    parser.add_argument("--include-json", action="store_true", help="Include *.json/*.jsonc files (overrides default exclude).")
+    parser.add_argument("--include-yaml", action="store_true", help="Include *.yaml/*.yml files (overrides default exclude).")
+    parser.add_argument("--include-xml", action="store_true", help="Include *.xml files (overrides default exclude).")
+    parser.add_argument("--include-html", action="store_true", help="Include *.html/*.htm files (overrides default exclude).")
+    parser.add_argument("--include-css", action="store_true", help="Include *.css files (overrides default exclude).")
+    parser.add_argument("--include-sql", action="store_true", help="Include *.sql files (overrides default exclude).")
+    parser.add_argument("--include-csv", action="store_true", help="Include *.csv/*.tsv files (overrides default exclude).")
+    parser.add_argument("--include-markdown", action="store_true", help="Include all non-root *.md/*.markdown/*.rst files (overrides default exclude).") # Grouped related flag
     return parser
 
 # --- Main Orchestration ---
 
 def main():
     """Main function to orchestrate script execution."""
+    # Basic logging setup (can be configured further)
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s', stream=sys.stderr)
+
     parser = setup_parser()
     args = parser.parse_args()
 
     # --- Input Validation ---
     if not args.root_dir.is_dir():
-        print(f"Error: Root directory not found or not a directory: {args.root_dir}", file=sys.stderr)
+        logging.error(f"Root directory not found or not a directory: {args.root_dir}")
         sys.exit(1)
 
     # --- Processing Steps ---
     try:
+        start_total_time = time.time()
         config = Config(args)
         file_filter = FileFilter(config)
         scanner = ProjectScanner(config, file_filter)
         scanner.scan()
         scan_data = scanner.get_data()
 
-        scan_data['config'] = config  # Add the 'config' object to the scan_data dictionary
+        # Check if any files were included
+        if not scan_data['included_files']:
+             logging.warning("No files were included based on the current filters. Output will be minimal.")
+             # Create minimal structure/content if needed, or let it proceed to generate empty sections
+             tree_structure = []
+             full_content = "# No files included"
+             summary_content = "# No files included"
+        else:
+             tree_builder = TreeBuilder(
+                 root_dir=config.root_dir,
+                 config=config,
+                 included_files_data=scan_data['included_files'] # Pass detailed data
+             )
+             tree_structure = tree_builder.build_structure() # Get structure first
 
-        tree_builder = TreeBuilder(
-            root_dir=config.root_dir,
-            config=config,
-            included_paths={f['absolute_path'] for f in scan_data['included_files']},
-            file_stats={f['absolute_path']: f for f in scan_data['included_files']}
-        )
-        tree_structure = tree_builder._build_tree_recursive(config.root_dir) # Get structure first
-        tree_string = tree_builder.build_and_format() # Format based on structure
+             formatter = MarkdownFormatter(scan_data, tree_structure) # Pass structure
+             # Generate both versions of the content
+             full_content = formatter.format_full()       # Plain tree for LLM
+             summary_content = formatter.format_summary() # Tree with blocks for terminal
 
-        formatter = MarkdownFormatter(scan_data, tree_string, tree_structure) # Pass structure for stats calc
-        full_content = formatter.format_full()
-        summary_content = formatter.format_summary()
+        end_total_time = time.time()
+        logging.info(f"Total processing time: {end_total_time - start_total_time:.3f} seconds.")
 
     except Exception as e:
-        print(f"\n--- Error during processing ---", file=sys.stderr)
-        print(f"Error: {e}", file=sys.stderr)
-        import traceback
-        traceback.print_exc(file=sys.stderr)
+        logging.error(f"Error during processing: {e}", exc_info=False) # Set exc_info=True for full traceback
+        # Optional: Print traceback to stderr for debugging
+        # import traceback
+        # traceback.print_exc(file=sys.stderr)
         sys.exit(1)
 
     # --- Output Handling ---
-    # Output handler now exits on error internally
     output_handler = OutputHandler(args)
     output_handler.handle(full_content, summary_content)
 
