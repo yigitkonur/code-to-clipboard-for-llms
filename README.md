@@ -74,11 +74,10 @@ iex "& {$(irm 'https://raw.githubusercontent.com/yigitkonur/code-to-clipboard-fo
 
 Using the tool is designed to be simple:
 
-1.  Navigate to your project's root directory in your terminal:
+1.  Install by extremely easy scripts to follow:
     ```bash
     git clone https://github.com/yigitkonur/code-to-clipboard-for-llms/
-    cd code-to-clipboard-for-llms
-    echo 'Follow the 
+    cd code-to-clipboard-for-llms && chmod +x install-mac.sh && ./install-mac.sh
     ```
 2.  Run the command:
     *   macOS/Linux: `context` (some people, incl **me** use `copy`)
