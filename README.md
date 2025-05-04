@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Python Version](https://img.shields.io/badge/python-3.6+-blue.svg)](https://www.python.org/downloads/) [![Platform](https://img.shields.io/badge/platform-osx%20%7C%20linux%20%7C%20windows-lightgrey.svg)]() [![GitHub Stars](https://img.shields.io/github/stars/yigitkonur/code-to-clipboard-for-llms?style=social)](https://github.com/yigitkonur/code-to-clipboard-for-llms)
 
-Interacting with LLMs like ChatGPT, Claude, or Gemini about your codebase often requires providing substantial context. Manually selecting, copying, and formatting relevant files is time-consuming, error-prone, and inefficient, especially when dealing with context window limits and token costs.
+Interacting with LLMs like ChatGPT, Claude, Gemini or apps like [Thinkbuddy](https://thinkbuddy.ai) 💫 about your codebase often requires providing substantial context. Manually selecting, copying, and formatting relevant files is time-consuming, error-prone, and inefficient, especially when dealing with context window limits and token costs.
 
 `code-to-clipboard-for-llms` streamlines this process. It's a Python script that automatically:
 
@@ -18,7 +18,7 @@ Spend less time preparing context and more time getting valuable insights from y
 
 ---
 
-**[Video is coming SOOOOOOOOOOOOON]**
+https://github.com/user-attachments/assets/399ccc84-a052-44b0-b26d-3f82cc43e16e
 
 ---
 
