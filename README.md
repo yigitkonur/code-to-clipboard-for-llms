@@ -76,11 +76,13 @@ Using the tool is designed to be simple:
 
 1.  Navigate to your project's root directory in your terminal:
     ```bash
-    cd /path/to/your/project
+    git clone https://github.com/yigitkonur/code-to-clipboard-for-llms/
+    cd code-to-clipboard-for-llms
+    echo 'Follow the 
     ```
 2.  Run the command:
-    *   macOS/Linux: `context`
-    *   Windows: `copyc`
+    *   macOS/Linux: `context` (some people, incl **me** use `copy`)
+    *   Windows: `copyc` (you can change it by editing powershell script)
     ```bash
     context # Or copyc on Windows
     ```
