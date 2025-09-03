@@ -12,7 +12,7 @@ jobs:
     - name: Update Homebrew formula
       uses: dawidd6/action-homebrew-bump-formula@v3
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.HOMEBREW_GITHUB_TOKEN }}
         tap: yigitkonur/homebrew-context
         formula: context
         tag: ${{ github.ref_name }}
