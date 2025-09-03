@@ -113,7 +113,7 @@ This is the cleanest, most native experience.
 ```bash
 # 1. Add the Tap (a one-time setup)
 brew tap yigitkonur/context
-brew install context
+brew install yigitkonur/context/context
 ```
 
 ### 🪟 Windows & Others: pipx (Recommended)
