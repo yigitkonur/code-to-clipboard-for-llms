@@ -16,14 +16,20 @@ Interacting with LLMs like ChatGPT, Claude, Gemini or apps like [Thinkbuddy](htt
 
 Spend less time preparing context and more time getting valuable insights from your AI assistant.
 
-## Install with pip
+## Install
 
-**Recommended (via pipx):**
+**Recommended (macOS/Linux with Homebrew):**
+```bash
+brew tap yigitkonur/context
+brew install context
+```
+
+**Alternative (via pipx - all platforms):**
 ```bash
 pipx install git+https://github.com/yigitkonur/code-to-clipboard-for-llms.git
 ```
 
-**Alternative (via pip):**
+**Alternative (via pip - all platforms):**
 ```bash
 pip install git+https://github.com/yigitkonur/code-to-clipboard-for-llms.git
 ```
@@ -58,13 +64,33 @@ This tool addresses these challenges by providing:
 
 ---
 
-## 🚀 Quick Installation (Recommended)
+## 🚀 Installation
 
-The easiest way to install this tool is using Python's package management system. We recommend `pipx` for complete isolation, but `pip` works too.
+Choose the method that works best for your system:
 
-### Method 1: Using pipx (Recommended)
+### Method 1: Homebrew (Recommended for macOS/Linux)
 
-`pipx` creates an isolated environment for each CLI tool, keeping your system clean.
+The simplest installation method on macOS and Linux:
+
+```bash
+brew tap yigitkonur/context
+brew install context
+```
+
+**Upgrade later:**
+```bash
+brew upgrade context
+```
+
+**Uninstall:**
+```bash
+brew uninstall context
+brew untap yigitkonur/context
+```
+
+### Method 2: pipx (Cross-platform)
+
+`pipx` creates an isolated environment for CLI tools, keeping your system clean:
 
 **First, install pipx if you don't have it:**
 ```bash
@@ -87,7 +113,7 @@ pipx upgrade llmcontext
 pipx uninstall llmcontext
 ```
 
-### Method 2: Using pip
+### Method 3: pip (Direct installation)
 
 ```bash
 pip install git+https://github.com/yigitkonur/code-to-clipboard-for-llms.git
