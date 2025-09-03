@@ -16,11 +16,17 @@ Interacting with LLMs like ChatGPT, Claude, Gemini or apps like [Thinkbuddy](htt
 
 Spend less time preparing context and more time getting valuable insights from your AI assistant.
 
-## Install with oneliner
+## Install with pip
 
-*   **mac:** `bash -c "$(curl -fsSL https://raw.githubusercontent.com/yigitkonur/code-to-clipboard-for-llms/main/install-mac.sh)"`
-*   **linux:** `bash -c "$(curl -fsSL https://raw.githubusercontent.com/yigitkonur/code-to-clipboard-for-llms/main/install-linux.sh)"`
-*   **win/powershell:** `iex "& {$(irm 'https://raw.githubusercontent.com/yigitkonur/code-to-clipboard-for-llms/main/install-windows.ps1')}"`
+**Recommended (via pipx):**
+```bash
+pipx install git+https://github.com/yigitkonur/code-to-clipboard-for-llms.git
+```
+
+**Alternative (via pip):**
+```bash
+pip install git+https://github.com/yigitkonur/code-to-clipboard-for-llms.git
+```
 
 
 ---
@@ -54,28 +60,40 @@ This tool addresses these challenges by providing:
 
 ## 🚀 Quick Installation (Recommended)
 
-The easiest way to get started is using the provided installers. They handle downloading the script, setting up the necessary PATH environment variable, installing dependencies, and creating a convenient command alias (`context` on macOS/Linux, `copyc` on Windows).
+The easiest way to install this tool is using Python's package management system. We recommend `pipx` for complete isolation, but `pip` works too.
 
-**Choose your operating system and run the corresponding one-line command in your terminal:**
+### Method 1: Using pipx (Recommended)
 
-### macOS / Linux (Bash or Zsh)
+`pipx` creates an isolated environment for each CLI tool, keeping your system clean.
+
+**First, install pipx if you don't have it:**
+```bash
+python3 -m pip install --user pipx
+python3 -m pipx ensurepath
+```
+
+**Then install the tool:**
+```bash
+pipx install git+https://github.com/yigitkonur/code-to-clipboard-for-llms.git
+```
+
+**Upgrade later:**
+```bash
+pipx upgrade llmcontext
+```
+
+**Uninstall:**
+```bash
+pipx uninstall llmcontext
+```
+
+### Method 2: Using pip
 
 ```bash
-# For macOS:
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/yigitkonur/code-to-clipboard-for-llms/main/install-mac.sh)"
-
-# For Linux (Debian/Ubuntu based tested):
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/yigitkonur/code-to-clipboard-for-llms/main/install-linux.sh)"
+pip install git+https://github.com/yigitkonur/code-to-clipboard-for-llms.git
 ```
 
-### Windows (PowerShell 5.1+)
-
-```powershell
-# Ensure PowerShell can run scripts (you might need to run as Administrator or adjust policy: Set-ExecutionPolicy RemoteSigned -Scope CurrentUser)
-iex "& {$(irm 'https://raw.githubusercontent.com/yigitkonur/code-to-clipboard-for-llms/main/install-windows.ps1')}"
-```
-
-**➡️ Important:** After installation, **close and reopen your terminal** window or tab. This is necessary for the new command and PATH changes to take effect.
+**➡️ Important:** After installation, the `context` command should be available in your terminal. If not, restart your terminal or ensure your Python scripts directory is in your PATH.
 
 ---
 
@@ -83,19 +101,17 @@ iex "& {$(irm 'https://raw.githubusercontent.com/yigitkonur/code-to-clipboard-fo
 
 Using the tool is designed to be simple:
 
-1.  Install by extremely easy scripts to follow:
+1.  **Install** using one of the methods above
+2.  **Navigate** to your project directory:
     ```bash
-    git clone https://github.com/yigitkonur/code-to-clipboard-for-llms/
-    cd code-to-clipboard-for-llms && chmod +x install-mac.sh && ./install-mac.sh
+    cd /path/to/your/project
     ```
-2.  Run the command:
-    *   macOS/Linux: `context` (some people, incl **me** use `copy`)
-    *   Windows: `copyc` (you can change it by editing powershell script)
+3.  **Run** the command:
     ```bash
-    context # Or copyc on Windows
+    context
     ```
-3.  The script will process the project and copy the formatted Markdown context to your clipboard.
-4.  Paste the content into your LLM prompt and ask your question.
+4.  The script will process the project and copy the formatted Markdown context to your clipboard.
+5.  **Paste** the content into your LLM prompt and ask your question.
 
 **Output Options:**
 
@@ -171,7 +187,7 @@ While the defaults work well, you can tailor the script's behavior using flags:
 
 ### Permanent Configuration
 
-For persistent changes, you can modify the default lists directly within the `copy.py` script:
+For persistent changes, you can modify the default lists directly within the `llmcontext.py` script:
 
 *   `DEFAULT_EXCLUDED_DIRS`: Tuple of directory names always excluded recursively.
 *   `DEFAULT_EXCLUDED_PATTERNS`: Tuple of file glob patterns excluded by default.
@@ -227,39 +243,42 @@ How does this tool stack up against common alternatives?
 
 ---
 
-## 🛠️ Manual Installation (Alternative)
+## 🛠️ Alternative Installation Methods
 
-If you prefer not to use the installers:
+### From Source (For Development)
 
-1.  **Prerequisites:** Ensure Python 3 (3.6+ recommended) and pip are installed.
-2.  **(Optional but Recommended) Install Dependencies:** For clipboard and `.gitignore` support:
+If you want to contribute or modify the code:
+
+1.  **Clone the repository:**
     ```bash
-    pip install --user pyperclip gitignore-parser
-    # Or pip3, depending on your system setup
+    git clone https://github.com/yigitkonur/code-to-clipboard-for-llms.git
+    cd code-to-clipboard-for-llms
     ```
-3.  **Download:** Get the `copy.py` script from this repository (e.g., via `curl` or by downloading the repo):
+
+2.  **Install in development mode:**
     ```bash
-    curl -fLo copy.py https://raw.githubusercontent.com/yigitkonur/code-to-clipboard-for-llms/main/copy.py
+    pip install -e .
     ```
-4.  **Move to PATH:** Place `copy.py` in a directory included in your system's PATH. A common choice is `~/bin` on Linux/macOS or a dedicated scripts folder on Windows.
+    This installs the tool while allowing you to edit the source code.
+
+### Direct Script Execution
+
+If you prefer to run the script directly without installation:
+
+1.  **Download the script:**
     ```bash
-    mkdir -p ~/bin && mv copy.py ~/bin/
+    curl -fLo llmcontext.py https://raw.githubusercontent.com/yigitkonur/code-to-clipboard-for-llms/main/llmcontext.py
     ```
-5.  **Make Executable (Linux/macOS):**
+
+2.  **Install dependencies:**
     ```bash
-    chmod +x ~/bin/copy.py
+    pip install pyperclip gitignore-parser
     ```
-6.  **Add to PATH (if needed):** Ensure the directory (e.g., `~/bin`) is in your PATH environment variable. This often involves editing shell configuration files (`~/.zshrc`, `~/.bashrc`, `~/.bash_profile`) or system environment variables (Windows). Example for `~/.bashrc` or `~/.zshrc`:
+
+3.  **Run directly:**
     ```bash
-    # Add this line if ~/bin is not in your PATH
-    export PATH="$HOME/bin:$PATH"
+    python3 llmcontext.py
     ```
-7.  **(Optional) Create Alias:** For easier use, add an alias to your shell configuration file:
-    ```bash
-    # Add this line after the PATH export
-    alias context='python3 $HOME/bin/copy.py'
-    ```
-8.  **Reload Shell:** Apply changes by restarting your terminal or sourcing the config file (e.g., `source ~/.bashrc`).
 
 ---
 
@@ -270,11 +289,11 @@ Common issues and potential solutions:
 <details>
 <summary><strong>Expand for troubleshooting tips</strong></summary>
 
-*   **`context: command not found` / `copyc: command not found`:**
-    *   Did you restart your terminal after installation? (Most common fix)
-    *   Is the script's directory (`~/bin` or `Scripts`) correctly added to your system's PATH? Verify with `echo $PATH` (Linux/Mac) or `echo $env:Path` (PowerShell).
-    *   (Manual Install) Did you correctly set up the alias in your shell config file? Check with `alias context`.
-    *   (Manual Install) Did you source your shell config file after editing?
+*   **`context: command not found`:**
+    *   Restart your terminal after installation
+    *   Verify the installation worked: `pipx list` (if you used pipx) or `pip show llmcontext`
+    *   Check if Python's script directory is in your PATH: `echo $PATH` (Linux/Mac) or `echo $env:Path` (PowerShell)
+    *   For `pip` installs, try `pip install --user git+https://github.com/...` and add `~/.local/bin` to your PATH
 
 *   **Clipboard Issues / `pyperclip` errors:**
     *   Ensure `pyperclip` is installed: `pip show pyperclip`. If not, `pip install pyperclip`.
