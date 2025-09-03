@@ -3,10 +3,10 @@ requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "llmcontext"
+name = "repo-to-llm-context"
 version = "2.2.0"
 description = "A tool to gather project context into a single file for LLMs"
-authors = [{name = "Yigit Konur", email = "yigitkonur@example.com"}]
+authors = [{name = "Yigit Konur", email = "yigit35@gmail.com"}]
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.6"

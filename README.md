@@ -1,188 +1,205 @@
-# Code-to-Clipboard-for-LLMs
+<h1 align="center">📦 repo-to-llm-context 📦</h1>
+<h3 align="center">Stop copy-pasting code. Start shipping smarter prompts.</h3>
 
-**Intelligently package your project's code context for LLMs. Install & try — took less than 60 seconds**
+<p align="center">
+ <strong>
+    <em>the ultimate context packer for your AI coding assistant. it scans your repo, ditches the junk, and bundles the good stuff into one perfect, clipboard-ready prompt.</em>
+  </strong>
+</p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Python Version](https://img.shields.io/badge/python-3.6+-blue.svg)](https://www.python.org/downloads/) [![Platform](https://img.shields.io/badge/platform-osx%20%7C%20linux%20%7C%20windows-lightgrey.svg)]() [![GitHub Stars](https://img.shields.io/github/stars/yigitkonur/code-to-clipboard-for-llms?style=social)](https://github.com/yigitkonur/code-to-clipboard-for-llms)
+<p align="center">
+  <!-- Package Info -->
+  <a href="#"><img alt="pypi" src="https://img.shields.io/pypi/v/repo-to-llm-context.svg?style=flat-square&color=4D87E6"></a>
+  <a href="#"><img alt="python" src="https://img.shields.io/badge/python-3.6+-4D87E6.svg?style=flat-square"></a>
+  &nbsp;&nbsp;•&nbsp;&nbsp;
+  <!-- Features -->
+  <a href="#"><img alt="license" src="https://img.shields.io/badge/License-MIT-F9A825.svg?style=flat-square"></a> 
+  <a href="#"><img alt="platform" src="https://img.shields.io/badge/platform-macOS_|_Linux_|_Windows-2ED573.svg?style=flat-square"></a>
+</p>
 
-Interacting with LLMs like ChatGPT, Claude, Gemini or apps like [Thinkbuddy](https://thinkbuddy.ai) 💫 about your codebase often requires providing substantial context. Manually selecting, copying, and formatting relevant files is time-consuming, error-prone, and inefficient, especially when dealing with context window limits and token costs.
+<p align="center">
+  <img alt="zero config" src="https://img.shields.io/badge/⚙️_zero_config-works_out_of_the_box-2ED573.svg?style=for-the-badge">
+  <img alt="clipboard ready" src="https://img.shields.io/badge/📋_clipboard_ready-one_command_to_copy-2ED573.svg?style=for-the-badge">
+</p>
 
-`code-to-clipboard-for-llms` streamlines this process. It's a Python script that automatically:
+<div align="center">
+  
+### 🧭 Quick Navigation
 
-1.  **Scans** your project directory.
-2.  **Filters** out irrelevant files and noise (like `node_modules`, build artifacts, `.git`).
-3.  **Structures** the relevant code logically.
-4.  **Formats** everything into clean Markdown, optimized for LLMs.
-5.  **Copies** the result directly to your clipboard.
+[**⚡ Get Started**](#-get-started-in-60-seconds) • 
+[**✨ Key Features**](#-feature-breakdown-the-secret-sauce) • 
+[**🎮 Usage & Examples**](#-usage-fire-and-forget) • 
+[**⚙️ Advanced Flags**](#️-advanced-usage--customization) •
+[**🆚 Comparison**](#-why-this-slaps-other-methods)
 
-Spend less time preparing context and more time getting valuable insights from your AI assistant.
+</div>
 
-## Install
+---
 
-**Recommended (macOS/Linux with Homebrew):**
+**`repo-to-llm-context`** is the project manager your AI assistant wishes it had. Stop feeding your LLM random files and praying for a good answer. This tool acts like a pro developer, reading your entire project, intelligently selecting the most relevant files, and packaging them into a perfectly structured prompt so your AI can actually understand what the hell is going on.
+
+<div align="center">
+<table>
+<tr>
+<td align="center">
+<h3>🧠</h3>
+<b>Smart Filtering</b><br/>
+<sub>Ditches node_modules & junk</sub>
+</td>
+<td align="center">
+<h3>🎯</h3>
+<b>Relevance Scoring</b><br/>
+<sub>Puts the important code first</sub>
+</td>
+<td align="center">
+<h3>📋</h3>
+<b>Clipboard Ready</b><br/>
+<sub>One command, ready to paste</sub>
+</td>
+</tr>
+</table>
+</div>
+
+How it slaps:
+-  **You:** `cd my-project && context`
+-  **`context`:** Scans, filters, scores, formats, and copies.
+-  **You:** `Cmd+V` into Claude/ChatGPT/Gemini.
+-  **LLM:** "Ah, I see. A well-structured project. Here is your god-tier answer."
+
+---
+
+## 💥 Why This Slaps Other Methods
+
+Manually prepping context is a vibe-killer. `repo-to-llm-context` makes other methods look ancient.
+
+<table align="center">
+<tr>
+<td align="center"><b>❌ The Old Way (Pain)</b></td>
+<td align="center"><b>✅ The `context` Way (Glory)</b></td>
+</tr>
+<tr>
+<td>
+<ol>
+  <li>Open 15 files in VS Code.</li>
+  <li>Frantically copy-paste into a text file.</li>
+  <li>Realize you forgot the Dockerfile.</li>
+  <li>Curse as you hit the token limit.</li>
+  <li>Get a mediocre answer from a confused LLM.</li>
+</ol>
+</td>
+<td>
+<ol>
+  <li><code>cd my-project</code></li>
+  <li><code>context</code></li>
+  <li>Paste.</li>
+  <li>Receive genius-level insights.</li>
+  <li>Go grab a coffee. ☕</li>
+</ol>
+</td>
+</tr>
+</table>
+
+We're not just concatenating files. We're building a **high-signal, low-noise prompt** with a sophisticated scoring algorithm that knows a `README.md` is more important than a test utility, and a `main.py` is more critical than a config file deep in a subdirectory.
+
+---
+
+## 🚀 Get Started in 60 Seconds
+
+The `context` command will be available in your terminal after installation.
+
+### 🍎 macOS & 🐧 Linux: Homebrew (Recommended)
+This is the cleanest, most native experience.
+
 ```bash
+# 1. Add the Tap (a one-time setup)
 brew tap yigitkonur/context
 brew install context
 ```
 
-**Alternative (via pipx - all platforms):**
-```bash
-pipx install git+https://github.com/yigitkonur/code-to-clipboard-for-llms.git
-```
-
-**Alternative (via pip - all platforms):**
-```bash
-pip install git+https://github.com/yigitkonur/code-to-clipboard-for-llms.git
-```
-
-
----
-
-## How to use? 
-
-https://github.com/user-attachments/assets/399ccc84-a052-44b0-b26d-3f82cc43e16e
-
----
-
-## The Problem It Solves
-
-Providing effective code context to LLMs manually is challenging:
-
-*   **Token Limits & Cost:** Including irrelevant files wastes the LLM's limited context window and increases API costs.
-*   **Noise & Confusion:** Dependency code, logs, or build artifacts can confuse the LLM, leading to less accurate responses.
-*   **Lack of Structure:** Randomly pasted files make it difficult for the LLM to understand project architecture and file relationships.
-*   **Manual Effort:** Selecting, filtering, formatting, and copying files by hand is tedious and inefficient.
-
-## The Solution: `code-to-clipboard-for-llms`
-
-This tool addresses these challenges by providing:
-
-*   ✅ **Intelligent Filtering:** Automatically excludes common unnecessary directories and files, respects `.gitignore` rules, and leverages Git tracking status (configurable).
-*   🧠 **Optimized Structure & Ordering:** Presents files logically (README first, then key files sorted by relevance) with clear Markdown formatting and syntax hints. Includes a visual file tree.
-*   ⏱️ **One-Command Operation:** Simplifies the entire context gathering process into a single command executed in your project directory.
-*   📋 **Direct Clipboard Integration:** Sends the formatted context straight to your clipboard, ready to paste.
-*   🔧 **Customization:** Offers flags to fine-tune filtering, sizing, and output behavior.
-
----
-
-## 🚀 Installation
-
-Choose the method that works best for your system:
-
-### Method 1: Homebrew (Recommended for macOS/Linux)
-
-The simplest installation method on macOS and Linux:
+### 🪟 Windows & Others: pipx (Recommended)
+`pipx` is the gold standard for installing Python CLI tools. It keeps things tidy and isolated.
 
 ```bash
-brew tap yigitkonur/context
-brew install context
-```
-
-**Upgrade later:**
-```bash
-brew upgrade context
-```
-
-**Uninstall:**
-```bash
-brew uninstall context
-brew untap yigitkonur/context
-```
-
-### Method 2: pipx (Cross-platform)
-
-`pipx` creates an isolated environment for CLI tools, keeping your system clean:
-
-**First, install pipx if you don't have it:**
-```bash
+# 1. Install pipx if you don't have it
 python3 -m pip install --user pipx
 python3 -m pipx ensurepath
+
+# 2. Install the tool (from PyPI once published, or from GitHub for latest)
+pipx install repo-to-llm-context
+# OR for latest dev version: pipx install git+https://github.com/yigitkonur/code-to-clipboard-for-llms.git
 ```
 
-**Then install the tool:**
-```bash
-pipx install git+https://github.com/yigitkonur/code-to-clipboard-for-llms.git
-```
-
-**Upgrade later:**
-```bash
-pipx upgrade llmcontext
-```
-
-**Uninstall:**
-```bash
-pipx uninstall llmcontext
-```
-
-### Method 3: pip (Direct installation)
-
-```bash
-pip install git+https://github.com/yigitkonur/code-to-clipboard-for-llms.git
-```
-
-**➡️ Important:** After installation, the `context` command should be available in your terminal. If not, restart your terminal or ensure your Python scripts directory is in your PATH.
+> **✨ Zero Manual Setup:** After installation, the `context` command should be ready to go. If not, just restart your terminal!
 
 ---
 
-## ▶️ Basic Usage
+## 🎮 Usage: Fire and Forget
 
-Using the tool is designed to be simple:
+The workflow is dead simple.
 
-1.  **Install** using one of the methods above
-2.  **Navigate** to your project directory:
-    ```bash
-    cd /path/to/your/project
-    ```
-3.  **Run** the command:
-    ```bash
-    context
-    ```
-4.  The script will process the project and copy the formatted Markdown context to your clipboard.
-5.  **Paste** the content into your LLM prompt and ask your question.
+**1. Navigate to Your Project**
+```bash
+cd /path/to/your/killer-app
+```
 
-**Output Options:**
+**2. Run the Command**
+```bash
+context
+```
+Your clipboard is now loaded with perfectly formatted Markdown.
 
-*   **Save to File:** Instead of copying to the clipboard, save the output to a Markdown file:
+**3. Paste & Prompt**
+Go to your favorite LLM and paste the context. Now you can ask the real questions.
+
+### Output Control 🕹️
+
+Don't want it on your clipboard? No problem.
+
+*   **Save to a file:**
     ```bash
     context --output project_context.md
     ```
-*   **Print to Terminal:** Display the output directly in the terminal (useful for previewing or piping):
+*   **Print directly to your terminal (for piping or peeking):**
     ```bash
     context --stdout
     ```
 
 ---
 
-## 🔑 Key Features Summary
+## ✨ Feature Breakdown: The Secret Sauce
 
-*   **Automatic Filtering:** Excludes irrelevant files/directories (`node_modules`, `.git`, `build`, `venv`, logs, etc.).
-*   **.gitignore Aware:** Uses `.gitignore` rules for exclusion (requires `gitignore-parser`).
-*   **Git Tracking Option:** Can optionally exclude files not tracked by Git.
-*   **Smart Ordering:** Prioritizes README, sorts files and directories by estimated importance (lines of code).
-*   **LLM-Optimized Markdown:** Clean formatting, code blocks with language hints, file paths.
-*   **Visual File Tree:** Includes a tree view (`├──`, `└──`) with markers (✅/❌) showing included/excluded items.
-*   **Metadata:** Includes file statistics (lines, characters, percentage) for context.
-*   **Privacy:** Masks user's home directory path in the output summary.
-*   **Configurable:** Command-line flags for including/excluding specific patterns, types, and controlling behavior.
-*   **Flexible Output:** Clipboard (default), file (`--output`), or standard output (`--stdout`).
-*   **Cross-Platform:** Python 3 script with installers for macOS, Linux, Windows.
+<div align="center">
+
+| Feature | What It Does | Why You Care |
+| :---: | :--- | :--- |
+| **🧠 Smart Filtering**<br/>`No junk allowed` | Auto-excludes `node_modules`, `venv`, `builds`, `.git`, logs & more | Stops you from wasting tokens on garbage |
+| **🎯 Relevance Scoring**<br/>`AI-optimized order` | Prioritizes files with a nuanced algorithm | Your LLM gets the most important info first |
+| **🏗️ Project Tree**<br/>`Visual context` | Includes a `tree`-style view of what's included | The AI (and you) can see the project structure |
+| **⚙️ Git-Aware**<br/>`Respects your repo` | Can read your `.gitignore` and check tracking status | Context matches your actual source code |
+| **📋 Clipboard Ready**<br/>`Cmd+C on steroids` | Copies the entire formatted output in one go | Zero manual work between terminal and AI |
+| **🔧 Hyper-Configurable**<br/>`You're the boss` | Flags to include/exclude anything you want | Fine-tune the context for any weird project |
+| **🔒 Privacy First**<br/>`No path leaks` | Masks your local home directory path in the summary | Share your code, not your user folder |
+
+</div>
 
 ---
 
 ## ⚙️ Advanced Usage & Customization
 
-While the defaults work well, you can tailor the script's behavior using flags:
+The defaults are great, but you can dial it in just right.
 
 <details>
-<summary><strong>Expand for detailed command-line flag reference</strong></summary>
+<summary><b>Expand for the full list of command-line flags</b></summary>
 
 #### Filtering and Inclusion Control
 
-*   `--include PATTERN`: Glob pattern to force inclusion of specific files or directories that might otherwise be excluded (e.g., `--include "tests/specific_test.py"`, `--include "config/**.yaml"`). Does not override excluded directories like `node_modules`. Can be used multiple times.
-*   `--exclude PATTERN`: Glob pattern to add custom exclusions beyond the defaults (e.g., `--exclude "*.log"`, `--exclude "docs/*"`). Can be used multiple times.
+*   `--include PATTERN`: Glob pattern to force inclusion of files/directories that might be excluded (e.g., `--include "config/**.yaml"`).
+*   `--exclude PATTERN`: Glob pattern to add custom exclusions beyond the defaults (e.g., `--exclude "*.log"`).
+*   `--include-only`: A powerful mode that includes *only* files matching `--include` patterns, excluding everything else.
 *   `--exclude-extension EXT`: Exclude all files with a specific extension (e.g., `--exclude-extension .tmp`).
-*   `--include-extension EXT`: Force include files with an extension normally excluded by default (use carefully).
+*   `--include-extension EXT`: Force include files with an extension that is normally excluded by default.
 
-#### Include Specific File Types (Overrides default exclusions)
+#### Override Default File Type Exclusions
 
 *   `--include-json`: Include `.json` / `.jsonc` files.
 *   `--include-yaml`: Include `.yaml` / `.yml` files.
@@ -191,154 +208,92 @@ While the defaults work well, you can tailor the script's behavior using flags:
 *   `--include-css`: Include `.css` files.
 *   `--include-sql`: Include `.sql` files.
 *   `--include-csv`: Include `.csv` / `.tsv` files.
-*   `--include-markdown`: Include *all* Markdown files (`.md`, `.markdown`, `.rst`), not just the root README.
+*   `--include-markdown`: Include all Markdown files, not just the root `README.md`.
 
 #### Size and Content Control
 
-*   `--max-size SIZE`: Exclude files larger than the specified size (e.g., `500k`, `10M`, `1G`). Use `0` for no limit. Default is `2M`.
-*   `--include-binary`: Attempt to include files detected as binary (default is false).
-
-#### Output Behavior
-
-*   `--no-clipboard`: Disable automatic copying to the clipboard.
+*   `--max-size SIZE`: Exclude files larger than the specified size (e.g., `500k`, `10M`). Default is `2M`.
+*   `--include-binary`: Attempt to include files detected as binary (default is to exclude them).
+*   `--max-depth N`: Limit scanning to a maximum directory depth.
 
 #### Git Integration Behavior
 
-*(Requires `gitignore-parser` Python library: `pip install gitignore-parser`)*
+*   `--no-gitignore`: (Default) Ignore `.gitignore` rules and Git tracking status entirely.
+*   `--gitignore-only`: Use `.gitignore` rules for exclusion but *don't* filter based on Git tracking status.
+*   `--use-git`: Use both `.gitignore` rules and only include files that are tracked by Git.
 
-*   `--no-gitignore`: Ignore `.gitignore` rules and Git tracking status entirely.
-*   `--gitignore-only`: Use `.gitignore` rules but *don't* exclude files solely because they are untracked by Git.
+#### Output and Execution Behavior
 
-</details>
-
-### Permanent Configuration
-
-For persistent changes, you can modify the default lists directly within the `llmcontext.py` script:
-
-*   `DEFAULT_EXCLUDED_DIRS`: Tuple of directory names always excluded recursively.
-*   `DEFAULT_EXCLUDED_PATTERNS`: Tuple of file glob patterns excluded by default.
-*   `FILES_TO_ALWAYS_CHECK`: Set of crucial filenames (e.g., `Dockerfile`, `requirements.txt`) considered even if their extension is excluded by default patterns.
-*   `SKIP_ALWAYS`: Set of filenames always excluded, overriding other rules.
-
----
-
-## 📄 Understanding the Output Format
-
-The generated Markdown is structured for clarity:
-
-<details>
-<summary><strong>Expand for output structure details</strong></summary>
-
-1.  **Header Section:** Title, project directory (masked), legend for tree symbols.
-2.  **Tree Section:** Visual tree (`.`, `├──`, `└──`, `│`) showing included (✅) and excluded (❌) files/directories, with stats for included files (lines, chars, percentage).
-3.  **Summary Statistics:** Total counts for included files, lines, and characters.
-4.  **Separator:** (`---`)
-5.  **Selected File Content Section:**
-    *   For each included file (in priority order):
-        *   `### /relative/path/to/file`: File path header.
-        *   `*(Stats: ...)*`: Line and character counts for the file.
-        *   ```` ```[language_hint] ````: Fenced code block with detected language hint (e.g., `python`, `javascript`).
-        *   File content.
-        *   ` ``` `: End of code block.
-        *   Blank line separator.
+*   `--output FILE`: Write output to a file instead of the clipboard.
+*   `--stdout`: Print the full output to the terminal.
+*   `--no-clipboard`: Disable automatic copying to the clipboard (useful when using `--stdout` or `--output`).
+*   `--preview`: Show a summary of what would be included without processing files or generating output.
+*   `--dry-run`: Run the entire process but do not write any output to the clipboard, file, or stdout.
+*   `--sort-alpha`: Override the relevance-based sorting and sort files alphabetically instead.
 
 </details>
 
 ---
 
-## 🆚 Comparison to Other Methods
+## 🆚 Why This Slaps Other Methods
 
-How does this tool stack up against common alternatives?
+<div align="center">
 
-| Feature                 | **This Script (`context`/`copyc`)** | Manual Copy/Paste | GitHub Link Sharing | Simple `cat`/`tree` | Code Search Tools |
-| :---------------------- | :-------------------------------: | :---------------: | :-----------------: | :-----------------: | :---------------: |
-| **Intelligent Filtering** |                 ✅                |         ❌        |          ❌         |          ❌         |    ⚠️ Limited     |
-| **LLM-Optimized Order** |                 ✅                |         ❌        |          ❌         |          ❌         |         ❌        |
-| **Tree Visualization**  |                 ✅                |         ❌        |     ⚠️ Partial      |     ⚠️ Basic      |    ⚠️ Limited     |
-| **Privacy (Path Mask)** |                 ✅                |         ❌        |     ⚠️ Depends      |          ❌         |    ⚠️ Depends     |
-| **File Statistics**     |                 ✅                |         ❌        |          ❌         |          ❌         |    ⚠️ Limited     |
-| **Clipboard Ready**     |                 ✅                |     ⚠️ Manual     |          ❌         |          ❌         |         ❌        |
-| **Customizable**        |                 ✅                |         ❌        |          ❌         |     ⚠️ Limited      |    ⚠️ Limited     |
-| **Syntax Highlighting** |                 ✅                |         ❌        |          ✅         |     ⚠️ Limited      |         ✅        |
-| **Offline Usage**       |                 ✅                |         ✅        |          ❌         |          ✅         |    ⚠️ Depends     |
-| **No Account Needed**   |                 ✅                |         ✅        |          ❌         |          ✅         |    ⚠️ Depends     |
-| **Reduces Token Cost**  |                 ✅                |         ❌        |          ❌         |          ❌         |         ❌        |
-| **Improves LLM Focus**  |                 ✅                |         ❌        |          ❌         |          ❌         |         ❌        |
+| Method | The Pain 😩 | The `context` Way 😎 |
+| :--- | :--- | :--- |
+| **Manual Copy/Paste** | You'll miss a file. You'll include junk. You'll hate your life. | One command. Perfect context. Every time. |
+| **`cat file1 file2 > out.txt`** | Zero structure. No filtering. Still manual. Basically useless. | Auto-filters, adds a file tree, and formats beautifully. |
+| **Sharing a GitHub Link** | LLM can't see local changes. Can't access private repos. | Works offline. Works on your latest, unpushed code. |
+| **Simple `tree` command** | Shows structure but includes zero code content. | Gives you the full package: structure AND content. |
 
-**Conclusion:** This tool provides a purpose-built solution for creating optimized LLM context that manual methods or simple utilities cannot easily replicate.
+</div>
 
 ---
 
-## 🛠️ Alternative Installation Methods
+## 🛠️ For Developers & Tinkerers
 
-### From Source (For Development)
+### Running from Source
 
-If you want to contribute or modify the code:
+Want to hack on the code? Easy.
 
-1.  **Clone the repository:**
+1.  **Clone the repo:**
     ```bash
     git clone https://github.com/yigitkonur/code-to-clipboard-for-llms.git
     cd code-to-clipboard-for-llms
     ```
 
-2.  **Install in development mode:**
+2.  **Set up a virtual environment and install in editable mode:**
     ```bash
+    python3 -m venv venv
+    source venv/bin/activate
     pip install -e .
     ```
-    This installs the tool while allowing you to edit the source code.
+    Now, any change you make to `llmcontext.py` will be live on your `context` command.
 
-### Direct Script Execution
+### Fork & Customize
 
-If you prefer to run the script directly without installation:
-
-1.  **Download the script:**
-    ```bash
-    curl -fLo llmcontext.py https://raw.githubusercontent.com/yigitkonur/code-to-clipboard-for-llms/main/llmcontext.py
-    ```
-
-2.  **Install dependencies:**
-    ```bash
-    pip install pyperclip gitignore-parser
-    ```
-
-3.  **Run directly:**
-    ```bash
-    python3 llmcontext.py
-    ```
+If you fork the repo, you can permanently change the default filters by editing the constants at the top of `llmcontext.py`.
 
 ---
 
-## ❓ Troubleshooting
-
-Common issues and potential solutions:
+## 🔥 Common Issues & Quick Fixes
 
 <details>
-<summary><strong>Expand for troubleshooting tips</strong></summary>
+<summary><b>Expand for troubleshooting tips</b></summary>
 
-*   **`context: command not found`:**
-    *   Restart your terminal after installation
-    *   Verify the installation worked: `pipx list` (if you used pipx) or `pip show llmcontext`
-    *   Check if Python's script directory is in your PATH: `echo $PATH` (Linux/Mac) or `echo $env:Path` (PowerShell)
-    *   For `pip` installs, try `pip install --user git+https://github.com/...` and add `~/.local/bin` to your PATH
-
-*   **Clipboard Issues / `pyperclip` errors:**
-    *   Ensure `pyperclip` is installed: `pip show pyperclip`. If not, `pip install pyperclip`.
-    *   **Linux:** `pyperclip` may require system tools like `xclip` or `xsel`. Install via package manager (e.g., `sudo apt install xclip`).
-    *   Try the `--stdout` or `--output` flags to bypass clipboard issues temporarily.
-
-*   **`.gitignore` Not Working:**
-    *   Ensure `gitignore-parser` is installed: `pip show gitignore-parser`. If not, `pip install gitignore-parser`.
-    *   Ensure you haven't used the `--no-gitignore` flag.
-
-*   **Script Errors:**
-    *   Verify Python 3 version (`python3 --version`) is 3.6 or higher.
-    *   Check file permissions if the script fails reading specific files.
-    *   If you edited the script, check for syntax errors. Try a fresh copy.
-
-*   **Incorrect Files Included/Excluded:**
-    *   Review the visual tree output (✅/❌) to understand the script's decisions.
-    *   Use `--stdout` to preview before relying on clipboard.
-    *   Adjust filtering with `--include` / `--exclude` flags.
-    *   Check your `.gitignore` file for relevant patterns.
+| Problem | Solution |
+| :--- | :--- |
+| **`context: command not found`** | **Restart your terminal.** 99% of the time, this is the fix. If not, run `pipx ensurepath` (for pipx) or check your `PATH` environment variable. |
+| **Clipboard isn't working** | **Linux users:** You might need a clipboard utility. Run `sudo apt install xclip` or `sudo pacman -S xclip`. For any OS, you can always use `--stdout` or `--output my_context.md` to bypass the clipboard. |
+| **`.gitignore` is ignored** | By default, git integration is off for speed. Use the `--gitignore-only` or `--use-git` flag to turn it on. |
+| **Script errors out** | Make sure you're on Python 3.8 or newer (`python3 --version`). |
 
 </details>
+
+---
+
+<div align="center">
+
+**Built with 🔥 because manually crafting LLM prompts is a soul-crushing waste of time.**
+
+</div>
