@@ -179,6 +179,7 @@ Don't want it on your clipboard? No problem.
 | **📋 Clipboard Ready**<br/>`Cmd+C on steroids` | Copies the entire formatted output in one go | Zero manual work between terminal and AI |
 | **🔧 Hyper-Configurable**<br/>`You're the boss` | Flags to include/exclude anything you want | Fine-tune the context for any weird project |
 | **🔒 Privacy First**<br/>`No path leaks` | Masks your local home directory path in the summary | Share your code, not your user folder |
+| **🚀 Auto-Update**<br/>`Always current` | Automatically updates to the latest version when available | Never miss new features or critical fixes |
 
 </div>
 
@@ -230,6 +231,14 @@ The defaults are great, but you can dial it in just right.
 *   `--preview`: Show a summary of what would be included without processing files or generating output.
 *   `--dry-run`: Run the entire process but do not write any output to the clipboard, file, or stdout.
 *   `--sort-alpha`: Override the relevance-based sorting and sort files alphabetically instead.
+
+#### Update Management
+
+*   `--version`: Display the current version and exit.
+*   `--check-updates`: Check for available updates with interactive prompts.
+*   `--no-auto-update`: Disable automatic updates (by default, `context` automatically updates when new versions are available).
+
+> **🚀 Auto-Update Feature**: By default, `context` automatically checks for and installs new versions when you run the command. This ensures you always have the latest features and fixes. Use `--no-auto-update` if you prefer manual control over updates.
 
 </details>
 

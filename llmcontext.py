@@ -1424,6 +1424,8 @@ class CliHandler:
                           help="Show version and exit")
         parser.add_argument("--check-updates", action="store_true",
                           help="Check for available updates")
+        parser.add_argument("--no-auto-update", action="store_true",
+                          help="Disable automatic updates")
         
         return parser
 
@@ -1577,14 +1579,22 @@ def main():
         sys.exit(0)
     
     # Auto-update check (only for normal execution, not for special flags)
-    if not any([args.version, args.check_updates, args.preview, args.dry_run]):
+    if not any([args.version, args.check_updates, args.preview, args.dry_run, args.no_auto_update]):
         try:
             update_info = VersionChecker.check_for_updates()
             if update_info:
                 print(f"🚀 New version v{update_info['latest']} available! (Current: v{update_info['current']})")
-                print(f"   Run '{update_info['update_command']}' to update")
-                print(f"   Or use --check-updates for more options")
-                print()  # Add spacing before normal output
+                print(f"   Automatically updating...")
+                
+                if VersionChecker.perform_update(update_info):
+                    print(f"✅ Successfully updated to v{update_info['latest']}!")
+                    print(f"   Restarting with new version...\n")
+                    # Re-execute with the new version
+                    os.execv(sys.executable, [sys.executable] + sys.argv)
+                else:
+                    print(f"❌ Auto-update failed. Please update manually:")
+                    print(f"   {update_info['update_command']}")
+                    print()  # Add spacing before normal output
         except Exception:
             # Silently ignore update check failures during normal operation
             pass
