@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "repo-to-llm-context"
-version = "2.2.5"
+version = "2.2.6"
 description = "A tool to gather project context into a single file for LLMs"
 authors = [{name = "Yigit Konur", email = "yigit35@gmail.com"}]
 readme = "README.md"
