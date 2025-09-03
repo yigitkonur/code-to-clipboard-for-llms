@@ -19,12 +19,45 @@ import re
 import subprocess
 import sys
 import time
+import urllib.request
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+
+# ============================================================================
+# VERSION MANAGEMENT
+# ============================================================================
+
+def _get_version():
+    """Get version from pyproject.toml or fallback."""
+    try:
+        import tomllib
+    except ImportError:
+        try:
+            import tomli as tomllib
+        except ImportError:
+            return "unknown"
+    
+    try:
+        pyproject_path = Path(__file__).parent / "pyproject.toml"
+        if pyproject_path.exists():
+            with open(pyproject_path, "rb") as f:
+                data = tomllib.load(f)
+                return data.get("project", {}).get("version", "unknown")
+    except Exception:
+        pass
+    
+    # Fallback for installed package
+    try:
+        import importlib.metadata
+        return importlib.metadata.version("repo-to-llm-context")
+    except Exception:
+        return "unknown"
+
+__version__ = _get_version()
 
 # ============================================================================
 # OPTIONAL IMPORTS
@@ -1386,8 +1419,119 @@ class CliHandler:
         parser.add_argument("--sort-alpha", action="store_true",
                           help="Sort files alphabetically")
         
+        # Version and updates
+        parser.add_argument("--version", action="store_true",
+                          help="Show version and exit")
+        parser.add_argument("--check-updates", action="store_true",
+                          help="Check for available updates")
+        
         return parser
 
+
+# ============================================================================
+# VERSION CHECKING AND UPDATE MANAGEMENT
+# ============================================================================
+
+class VersionChecker:
+    """Handles version checking and update notifications."""
+    
+    @staticmethod
+    def parse_version(version_str: str) -> Tuple[int, int, int]:
+        """Parse a version string into tuple of integers."""
+        try:
+            # Remove 'v' prefix if present
+            version_str = version_str.lstrip('v')
+            parts = version_str.split('.')
+            return tuple(int(part) for part in parts[:3])
+        except (ValueError, TypeError):
+            return (0, 0, 0)
+    
+    @staticmethod
+    def is_newer_version(current: str, latest: str) -> bool:
+        """Check if latest version is newer than current."""
+        current_tuple = VersionChecker.parse_version(current)
+        latest_tuple = VersionChecker.parse_version(latest)
+        return latest_tuple > current_tuple
+    
+    @staticmethod
+    def get_latest_pypi_version() -> Optional[str]:
+        """Get the latest version from PyPI."""
+        try:
+            with urllib.request.urlopen("https://pypi.org/pypi/repo-to-llm-context/json", timeout=5) as response:
+                data = json.loads(response.read())
+                return data.get("info", {}).get("version")
+        except Exception:
+            return None
+    
+    @staticmethod
+    def get_latest_github_version() -> Optional[str]:
+        """Get the latest version from GitHub releases."""
+        try:
+            with urllib.request.urlopen("https://api.github.com/repos/yigitkonur/code-to-clipboard-for-llms/releases/latest", timeout=5) as response:
+                data = json.loads(response.read())
+                return data.get("tag_name", "").lstrip('v')
+        except Exception:
+            return None
+    
+    @staticmethod
+    def check_for_updates(current_version: str = __version__) -> Optional[Dict[str, str]]:
+        """Check for available updates."""
+        if current_version == "unknown":
+            return None
+            
+        # Try PyPI first (most reliable)
+        latest_pypi = VersionChecker.get_latest_pypi_version()
+        if latest_pypi and VersionChecker.is_newer_version(current_version, latest_pypi):
+            return {
+                "current": current_version,
+                "latest": latest_pypi,
+                "source": "PyPI",
+                "update_command": "pipx upgrade repo-to-llm-context"
+            }
+        
+        # Try GitHub as fallback
+        latest_github = VersionChecker.get_latest_github_version()
+        if latest_github and VersionChecker.is_newer_version(current_version, latest_github):
+            return {
+                "current": current_version,
+                "latest": latest_github,
+                "source": "GitHub",
+                "update_command": "brew upgrade yigitkonur/context/context"
+            }
+        
+        return None
+    
+    @staticmethod
+    def prompt_for_update(update_info: Dict[str, str]) -> bool:
+        """Prompt user for update and return whether to proceed."""
+        print(f"\n🚀 New version available!")
+        print(f"   Current: v{update_info['current']}")
+        print(f"   Latest:  v{update_info['latest']} (from {update_info['source']})")
+        print(f"   Update:  {update_info['update_command']}")
+        
+        try:
+            response = input("\nWould you like to update now? (y/N): ").lower().strip()
+            return response in ('y', 'yes')
+        except (KeyboardInterrupt, EOFError):
+            return False
+    
+    @staticmethod
+    def perform_update(update_info: Dict[str, str]) -> bool:
+        """Attempt to perform the update."""
+        command = update_info['update_command'].split()
+        try:
+            print(f"Running: {' '.join(command)}")
+            result = subprocess.run(command, capture_output=True, text=True)
+            if result.returncode == 0:
+                print("✅ Update completed successfully!")
+                print("Please restart the command to use the new version.")
+                return True
+            else:
+                print(f"❌ Update failed: {result.stderr}")
+                return False
+        except Exception as e:
+            print(f"❌ Update failed: {e}")
+            return False
 
 # ============================================================================
 # MAIN EXECUTION
@@ -1405,6 +1549,45 @@ def main():
     # Parse arguments
     parser = CliHandler.create_parser()
     args = parser.parse_args()
+    
+    # Handle version display
+    if args.version:
+        print(f"repo-to-llm-context version {__version__}")
+        sys.exit(0)
+    
+    # Handle update checking
+    if args.check_updates:
+        print("🔍 Checking for updates...")
+        update_info = VersionChecker.check_for_updates()
+        if update_info:
+            print(f"🚀 New version available!")
+            print(f"   Current: v{update_info['current']}")
+            print(f"   Latest:  v{update_info['latest']} (from {update_info['source']})")
+            print(f"   Update:  {update_info['update_command']}")
+            
+            if VersionChecker.prompt_for_update(update_info):
+                if VersionChecker.perform_update(update_info):
+                    sys.exit(0)
+                else:
+                    sys.exit(1)
+            else:
+                print("Update skipped.")
+        else:
+            print("✅ You're running the latest version!")
+        sys.exit(0)
+    
+    # Auto-update check (only for normal execution, not for special flags)
+    if not any([args.version, args.check_updates, args.preview, args.dry_run]):
+        try:
+            update_info = VersionChecker.check_for_updates()
+            if update_info:
+                print(f"🚀 New version v{update_info['latest']} available! (Current: v{update_info['current']})")
+                print(f"   Run '{update_info['update_command']}' to update")
+                print(f"   Or use --check-updates for more options")
+                print()  # Add spacing before normal output
+        except Exception:
+            # Silently ignore update check failures during normal operation
+            pass
     
     # Validate input
     if not args.root_dir.is_dir():
