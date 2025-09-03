@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "repo-to-llm-context"
-version = "2.2.0"
+version = "2.2.2"
 description = "A tool to gather project context into a single file for LLMs"
 authors = [{name = "Yigit Konur", email = "yigit35@gmail.com"}]
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 requires-python = ">=3.6"
 keywords = ["llm", "context", "code", "clipboard", "ai", "developer-tools"]
 classifiers = [
