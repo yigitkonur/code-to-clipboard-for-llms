@@ -99,7 +99,7 @@ Manually prepping context is a vibe-killer. `repo-to-llm-context` makes other me
 </tr>
 </table>
 
-We're not just concatenating files. We're building a **high-signal, low-noise prompt** with a sophisticated scoring algorithm that knows a `README.md` is more important than a test utility, and a `main.py` is more critical than a config file deep in a subdirectory.
+We're not just concatenating files. We're building a **high-signal, low-noise prompt** with intelligent depth-first traversal that processes directories systematically, prioritizes README files, and prevents massive files from breaking your LLM's context window.
 
 ---
 
@@ -151,6 +151,29 @@ Your clipboard is now loaded with perfectly formatted Markdown.
 **3. Paste & Prompt**
 Go to your favorite LLM and paste the context. Now you can ask the real questions.
 
+### 📏 Large File Control (NEW!)
+
+Got massive JSON files or generated code breaking your LLM context? We've got you covered.
+
+*   **Skip large files entirely:**
+    ```bash
+    context --skip-large-files --max-file-chars 5000
+    ```
+*   **Truncate large files with smart preview:**
+    ```bash
+    context --truncate-large-files --max-file-chars 8000
+    ```
+*   **Custom limits for different projects:**
+    ```bash
+    context --max-file-chars 15000 --truncate-large-files
+    ```
+
+The tool shows exactly what it's doing:
+```
+INFO: Truncated response.json: 1,487,897 → 10,075 chars
+Success: 530,745 chars copied to clipboard
+```
+
 ### Output Control 🕹️
 
 Don't want it on your clipboard? No problem.
@@ -173,7 +196,8 @@ Don't want it on your clipboard? No problem.
 | Feature | What It Does | Why You Care |
 | :---: | :--- | :--- |
 | **🧠 Smart Filtering**<br/>`No junk allowed` | Auto-excludes `node_modules`, `venv`, `builds`, `.git`, logs & more | Stops you from wasting tokens on garbage |
-| **🎯 Relevance Scoring**<br/>`AI-optimized order` | Prioritizes files with a nuanced algorithm | Your LLM gets the most important info first |
+| **🎯 Depth-First Sorting**<br/>`Perfect file order` | Traverses directories systematically, README.md files first | Your LLM gets context in logical, hierarchical order |
+| **📏 Large File Control**<br/>`Token-aware sizing` | Skip or truncate files over configurable limits (default: 10K chars) | Never blow your LLM's context window again |
 | **🏗️ Project Tree**<br/>`Visual context` | Includes a `tree`-style view of what's included | The AI (and you) can see the project structure |
 | **⚙️ Git-Aware**<br/>`Respects your repo` | Can read your `.gitignore` and check tracking status | Context matches your actual source code |
 | **📋 Clipboard Ready**<br/>`Cmd+C on steroids` | Copies the entire formatted output in one go | Zero manual work between terminal and AI |
@@ -214,6 +238,9 @@ The defaults are great, but you can dial it in just right.
 #### Size and Content Control
 
 *   `--max-size SIZE`: Exclude files larger than the specified size (e.g., `500k`, `10M`). Default is `2M`.
+*   `--max-file-chars N`: Set maximum characters per file (default: 10,000). Works with skip/truncate options.
+*   `--skip-large-files`: Skip files that exceed the `--max-file-chars` limit entirely.
+*   `--truncate-large-files`: Keep large files but show only the first N characters with a truncation notice.
 *   `--include-binary`: Attempt to include files detected as binary (default is to exclude them).
 *   `--max-depth N`: Limit scanning to a maximum directory depth.
 

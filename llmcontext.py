@@ -196,6 +196,11 @@ class ScanConfig:
     is_targeted_directory: bool
     include_only_mode: bool
     
+    # Large file handling
+    max_file_chars: Optional[int] = None
+    skip_large_files: bool = False
+    truncate_large_files: bool = False
+    
     # Pattern collections
     excluded_dirs: Set[str] = field(default_factory=lambda: set(DEFAULT_EXCLUDED_DIRS))
     excluded_patterns: Set[str] = field(default_factory=set)
@@ -425,6 +430,26 @@ class GitTrackingRule(FilterRule):
         return True, ""
 
 
+class LargeFileRule(FilterRule):
+    """Rule to handle large files based on character count."""
+    
+    def passes(self, path: Path, config: ScanConfig) -> Tuple[bool, str]:
+        if not config.max_file_chars or not config.skip_large_files:
+            return True, ""
+        
+        try:
+            # Read file to check character count
+            content = path.read_text(encoding='utf-8', errors='ignore')
+            char_count = len(content)
+            
+            if char_count > config.max_file_chars:
+                return False, f"File too large: {char_count:,} > {config.max_file_chars:,} chars"
+        except Exception:
+            return False, "Cannot read file for size check"
+        
+        return True, ""
+
+
 # ============================================================================
 # CONFIGURATION FACTORY
 # ============================================================================
@@ -470,6 +495,15 @@ class ConfigFactory:
         # Parse max size
         max_size = ConfigFactory._parse_size(args.max_size)
         
+        # Handle large file options
+        max_file_chars = getattr(args, 'max_file_chars', 10000)
+        skip_large = getattr(args, 'skip_large_files', False)
+        truncate_large = getattr(args, 'truncate_large_files', False)
+        
+        # If both skip and truncate are specified, prefer truncate
+        if skip_large and truncate_large:
+            skip_large = False
+        
         return ScanConfig(
             root_dir=root_dir,
             git_mode=git_mode,
@@ -479,6 +513,9 @@ class ConfigFactory:
             sort_alphabetically=getattr(args, 'sort_alpha', False),
             is_targeted_directory=is_targeted,
             include_only_mode=args.include_only,
+            max_file_chars=max_file_chars,
+            skip_large_files=skip_large,
+            truncate_large_files=truncate_large,
             excluded_dirs=excluded_dirs,
             excluded_patterns=excluded_patterns,
             included_patterns=included_patterns,
@@ -690,6 +727,9 @@ class FileFilter:
         
         # Default pattern exclusions
         self.rules.append(DefaultPatternRule())
+        
+        # Large file handling (add after other rules but before final checks)
+        self.rules.append(LargeFileRule())
     
     def should_include(self, path: Path) -> Tuple[bool, str]:
         """Check if a file should be included."""
@@ -745,13 +785,24 @@ class ContentReader:
     """Reads file contents and creates FileResult objects."""
     
     @staticmethod
-    def read_files(paths: List[Path], root_dir: Path) -> List[FileResult]:
+    def read_files(paths: List[Path], root_dir: Path, config: ScanConfig) -> List[FileResult]:
         """Read content from list of paths."""
         results = []
         
         for path in paths:
             try:
                 content = path.read_text(encoding='utf-8', errors='ignore')
+                original_chars = len(content)
+                was_truncated = False
+                
+                # Handle truncation if enabled and file is too large
+                if (config.truncate_large_files and 
+                    config.max_file_chars and 
+                    original_chars > config.max_file_chars):
+                    content = content[:config.max_file_chars]
+                    content += f"\n\n... [TRUNCATED: Original file was {original_chars:,} chars, showing first {config.max_file_chars:,} chars]"
+                    was_truncated = True
+                
                 lines = content.count('\n') + 1 if content else 0
                 chars = len(content)
                 
@@ -766,6 +817,10 @@ class ContentReader:
                     char_count=chars,
                     language_hint=language_hint
                 ))
+                
+                if was_truncated:
+                    logging.info(f"Truncated {path}: {original_chars:,} → {chars:,} chars")
+                    
             except Exception as e:
                 logging.warning(f"Could not read {path}: {e}")
                 # Add placeholder for failed reads
@@ -828,19 +883,19 @@ class ProjectAnalyzer:
             execution_time=scan_time
         )
     
-    def _sort_files(self, files: List[FileResult], 
+    def _sort_files(self, files: List[FileResult],
                    config: ScanConfig) -> List[FileResult]:
         """Sort files using intelligent prioritization."""
         if config.sort_alphabetically:
             return self._sort_alphabetically(files)
-        
+
         # Check for numbered files
-        numbered_count = sum(1 for f in files 
+        numbered_count = sum(1 for f in files
                            if re.match(r'^\d+_', f.relative_path.name))
         if numbered_count > len(files) / 2:
             return self._sort_numerically(files)
-        
-        return self._sort_by_relevance(files, config)
+
+        return self._sort_depth_first_alphabetical(files, config)
     
     def _sort_alphabetically(self, files: List[FileResult]) -> List[FileResult]:
         """Sort files alphabetically."""
@@ -856,89 +911,73 @@ class ProjectAnalyzer:
         
         return sorted(files, key=sort_key)
     
-    def _calculate_file_relevance_score(self, file: FileResult) -> float:
-        """Calculate relevance score for a file."""
-        score = 0.0
-        name = file.relative_path.name.lower()
-        ext = file.relative_path.suffix.lower()
-        path_parts = file.relative_path.parts
+    def _sort_depth_first_alphabetical(self, files: List[FileResult],
+                                       config: ScanConfig) -> List[FileResult]:
+        """Sort files in depth-first alphabetical order starting from root."""
+        if not files:
+            return files
+
+        # Build a tree structure to enable proper depth-first traversal
+        from collections import defaultdict
+        tree = defaultdict(lambda: {'files': [], 'dirs': set()})
         
-        # Base category scores (higher is more important)
-        if name == 'readme.md':
-            score += 1000
-        elif name in ['package.json', 'pyproject.toml', 'cargo.toml', 'go.mod']:
-            score += 900
-        elif name in ['main.tsx', 'main.ts', 'main.js', 'main.py', 'main.go', 'main.rs']:
-            score += 800
-        elif name in ['app.tsx', 'app.ts', 'app.js', 'app.py', 'app.go', 'app.rs']:
-            score += 750
-        elif name in ['index.tsx', 'index.ts', 'index.js', 'index.py']:
-            score += 700
-        elif 'main' in name or 'app' in name or 'index' in name:
-            score += 600
-        
-        # File type priority
-        type_scores = {
-            '.tsx': 100, '.ts': 95, '.jsx': 90, '.js': 85,
-            '.py': 80, '.go': 75, '.rs': 70, '.java': 65,
-            '.kt': 60, '.swift': 55, '.rb': 50, '.php': 45,
-            '.c': 40, '.cpp': 35, '.h': 30, '.hpp': 25
-        }
-        score += type_scores.get(ext, 0)
-        
-        # Special filename bonuses
-        special_names = {
-            'dockerfile': 50, 'docker-compose.yml': 50,
-            'makefile': 40, 'rakefile': 40, 'gemfile': 40,
-            'requirements.txt': 45, 'setup.py': 45, 'setup.cfg': 40
-        }
-        score += special_names.get(name, 0)
-        
-        # Directory depth penalty (prefer files closer to root)
-        depth = len(path_parts) - 1
-        score -= depth * 10
-        
-        # Content-based bonuses
-        if ext in ['.tsx', '.ts', '.jsx', '.js']:
-            content_lower = file.content.lower()
-            if any(kw in content_lower for kw in ['react.fc', 'usestate', 'useeffect']):
-                score += 50
-            if 'export default' in content_lower:
-                score += 30
-            if any(kw in content_lower for kw in ['function', 'class', 'const']):
-                score += 20
-        
-        elif ext == '.py':
-            content_lower = file.content.lower()
-            if any(kw in content_lower for kw in ['def main', 'if __name__']):
-                score += 50
-            if any(kw in content_lower for kw in ['class ', 'def ']):
-                score += 30
-        
-        # Size factor (moderate preference for substantial files)
-        if 50 <= file.line_count <= 500:
-            score += 20
-        elif 10 <= file.line_count < 50:
-            score += 10
-        elif file.line_count > 500:
-            score -= 10  # Very long files get slight penalty
-        
-        # Directory context bonuses
-        if any(part in ['src', 'lib', 'app', 'components'] for part in path_parts):
-            score += 25
-        elif any(part in ['test', 'tests', '__tests__'] for part in path_parts):
-            score -= 50  # Tests are less relevant for context
-        
-        return score
-    
-    def _sort_by_relevance(self, files: List[FileResult], 
-                          config: ScanConfig) -> List[FileResult]:
-        """Sort files by calculated relevance score."""
-        # Calculate scores and sort
-        scored_files = [(self._calculate_file_relevance_score(f), f) for f in files]
-        scored_files.sort(key=lambda x: (-x[0], x[1].relative_path.name.lower()))
-        
-        return [f for _, f in scored_files]
+        # Populate the tree structure
+        for file in files:
+            path_parts = file.relative_path.parts
+            
+            # Add file to its parent directory
+            if len(path_parts) == 1:
+                # Root level file
+                tree['']['files'].append(file)
+            else:
+                parent_path = '/'.join(path_parts[:-1])
+                tree[parent_path]['files'].append(file)
+            
+            # Register all parent directories
+            current_path = ''
+            for i, part in enumerate(path_parts[:-1]):  # Exclude filename
+                if i == 0:
+                    current_path = part
+                    tree['']['dirs'].add(part)
+                else:
+                    parent_path = '/'.join(path_parts[:i])
+                    current_path = '/'.join(path_parts[:i+1])
+                    tree[parent_path]['dirs'].add(part)
+
+        # Sort files within each directory (README.md first, then alphabetical)
+        def sort_files_in_dir(file_list):
+            def sort_key(f):
+                name = f.relative_path.name.lower()
+                if name == 'readme.md':
+                    return (0, name)  # README.md comes first
+                else:
+                    return (1, name)  # Other files sorted alphabetically
+            return sorted(file_list, key=sort_key)
+
+        # Apply sorting to all directory file lists
+        for dir_path in tree:
+            tree[dir_path]['files'] = sort_files_in_dir(tree[dir_path]['files'])
+
+        # Recursive depth-first traversal
+        def traverse_directory(dir_path):
+            result = []
+            
+            # Add files in current directory first
+            result.extend(tree[dir_path]['files'])
+            
+            # Then recursively traverse subdirectories alphabetically
+            subdirs = sorted(tree[dir_path]['dirs'])
+            for subdir in subdirs:
+                if dir_path == '':
+                    subdir_path = subdir
+                else:
+                    subdir_path = f"{dir_path}/{subdir}"
+                result.extend(traverse_directory(subdir_path))
+            
+            return result
+
+        # Start traversal from root
+        return traverse_directory('')
     
     def _detect_tech_stack(self, files: List[FileResult]) -> Set[str]:
         """Detect technology stack from files."""
@@ -1403,6 +1442,14 @@ class CliHandler:
         parser.add_argument("--include-markdown", action="store_true",
                           help="Include Markdown files")
         
+        # Large file handling
+        parser.add_argument("--max-file-chars", type=int, default=10000,
+                          help="Maximum characters per file (default: 10000)")
+        parser.add_argument("--skip-large-files", action="store_true",
+                          help="Skip files exceeding max-file-chars limit")
+        parser.add_argument("--truncate-large-files", action="store_true",
+                          help="Truncate files exceeding max-file-chars limit")
+        
         # Features
         parser.add_argument("--preview", action="store_true",
                           help="Preview what would be included")
@@ -1637,7 +1684,7 @@ def main():
             return
         
         # Read file contents
-        file_results = ContentReader.read_files(included_paths, config.root_dir)
+        file_results = ContentReader.read_files(included_paths, config.root_dir, config)
         
         # Analyze project
         analyzer = ProjectAnalyzer()
