@@ -197,13 +197,13 @@ Don't want it on your clipboard? No problem.
 | :---: | :--- | :--- |
 | **🧠 Smart Filtering**<br/>`No junk allowed` | Auto-excludes `node_modules`, `venv`, `builds`, `.git`, logs & more | Stops you from wasting tokens on garbage |
 | **🎯 Depth-First Sorting**<br/>`Perfect file order` | Traverses directories systematically, README.md files first | Your LLM gets context in logical, hierarchical order |
-| **📏 Large File Control**<br/>`Token-aware sizing` | Skip or truncate files over configurable limits (default: 10K chars) | Never blow your LLM's context window again |
+| **📏 Large File Control**<br/>`Token-aware sizing` | Skip or truncate files over configurable limits (default: 50K chars) | Never blow your LLM's context window again |
 | **🏗️ Project Tree**<br/>`Visual context` | Includes a `tree`-style view of what's included | The AI (and you) can see the project structure |
 | **⚙️ Git-Aware**<br/>`Respects your repo` | Can read your `.gitignore` and check tracking status | Context matches your actual source code |
 | **📋 Clipboard Ready**<br/>`Cmd+C on steroids` | Copies the entire formatted output in one go | Zero manual work between terminal and AI |
 | **🔧 Hyper-Configurable**<br/>`You're the boss` | Flags to include/exclude anything you want | Fine-tune the context for any weird project |
 | **🔒 Privacy First**<br/>`No path leaks` | Masks your local home directory path in the summary | Share your code, not your user folder |
-| **🚀 Auto-Update**<br/>`Always current` | Automatically updates to the latest version when available | Never miss new features or critical fixes |
+| **🎯 Interactive Mode**<br/>`Guided setup` | Run `--interactive` for a step-by-step config wizard | Perfect for first-time users or complex setups |
 
 </div>
 
@@ -238,7 +238,7 @@ The defaults are great, but you can dial it in just right.
 #### Size and Content Control
 
 *   `--max-size SIZE`: Exclude files larger than the specified size (e.g., `500k`, `10M`). Default is `2M`.
-*   `--max-file-chars N`: Set maximum characters per file (default: 10,000). Works with skip/truncate options.
+*   `--max-file-chars N`: Set maximum characters per file (default: 50,000). Works with skip/truncate options.
 *   `--skip-large-files`: Skip files that exceed the `--max-file-chars` limit entirely.
 *   `--truncate-large-files`: Keep large files but show only the first N characters with a truncation notice.
 *   `--include-binary`: Attempt to include files detected as binary (default is to exclude them).
@@ -246,8 +246,8 @@ The defaults are great, but you can dial it in just right.
 
 #### Git Integration Behavior
 
-*   `--no-gitignore`: (Default) Ignore `.gitignore` rules and Git tracking status entirely.
-*   `--gitignore-only`: Use `.gitignore` rules for exclusion but *don't* filter based on Git tracking status.
+*   `--no-gitignore`: Ignore `.gitignore` rules and Git tracking status entirely.
+*   `--gitignore-only`: (Default) Use `.gitignore` rules for exclusion but *don't* filter based on Git tracking status.
 *   `--use-git`: Use both `.gitignore` rules and only include files that are tracked by Git.
 
 #### Output and Execution Behavior
@@ -259,13 +259,10 @@ The defaults are great, but you can dial it in just right.
 *   `--dry-run`: Run the entire process but do not write any output to the clipboard, file, or stdout.
 *   `--sort-alpha`: Override the relevance-based sorting and sort files alphabetically instead.
 
-#### Update Management
+#### Information
 
 *   `--version`: Display the current version and exit.
-*   `--check-updates`: Check for available updates with interactive prompts.
-*   `--no-auto-update`: Disable automatic updates (by default, `context` automatically updates when new versions are available).
-
-> **🚀 Auto-Update Feature**: By default, `context` automatically checks for and installs new versions when you run the command. This ensures you always have the latest features and fixes. Use `--no-auto-update` if you prefer manual control over updates.
+*   `--check-updates`: Check for available updates.
 
 </details>
 
@@ -321,7 +318,7 @@ If you fork the repo, you can permanently change the default filters by editing 
 | :--- | :--- |
 | **`context: command not found`** | **Restart your terminal.** 99% of the time, this is the fix. If not, run `pipx ensurepath` (for pipx) or check your `PATH` environment variable. |
 | **Clipboard isn't working** | **Linux users:** You might need a clipboard utility. Run `sudo apt install xclip` or `sudo pacman -S xclip`. For any OS, you can always use `--stdout` or `--output my_context.md` to bypass the clipboard. |
-| **`.gitignore` is ignored** | By default, git integration is off for speed. Use the `--gitignore-only` or `--use-git` flag to turn it on. |
+| **`.gitignore` is ignored** | Make sure you have `gitignore-parser` installed. The tool uses `.gitignore` by default. Use `--no-gitignore` to disable. |
 | **Script errors out** | Make sure you're on Python 3.8 or newer (`python3 --version`). |
 
 </details>
