@@ -31,10 +31,11 @@ jobs:
         echo "Version: $VERSION_NUM"
         echo "SHA256: $SHA256"
         
-        # Update the formula
-        sed -i "s|url \".*\"|url \"$TARBALL_URL\"|" Formula/context.rb
-        sed -i "s|sha256 \".*\"|sha256 \"$SHA256\"|" Formula/context.rb
-        sed -i "s|version \".*\"|version \"$VERSION_NUM\"|" Formula/context.rb
+        # Update only the main formula URL, SHA, and version (not resources)
+        # Use line-specific updates to avoid touching resource blocks
+        sed -i "6s|url \".*\"|url \"$TARBALL_URL\"|" Formula/context.rb
+        sed -i "7s|sha256 \".*\"|sha256 \"$SHA256\"|" Formula/context.rb
+        sed -i "9s|version \".*\"|version \"$VERSION_NUM\"|" Formula/context.rb
         
         cat Formula/context.rb
 
