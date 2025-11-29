@@ -107,17 +107,40 @@ We're not just concatenating files. We're building a **high-signal, low-noise pr
 
 The `context` command will be available in your terminal after installation.
 
-### 🍎 macOS & 🐧 Linux: Homebrew (Recommended)
-This is the cleanest, most native experience.
+<div align="center">
+
+| Platform | Recommended Method | One-liner |
+|:--------:|:------------------:|:----------|
+| 🍎 **macOS** | Homebrew | `brew install yigitkonur/context/context` |
+| 🪟 **Windows** | Scoop | `scoop bucket add context https://github.com/yigitkonur/scoop-context && scoop install context` |
+| 🐧 **Linux** | Homebrew | `brew install yigitkonur/context/context` |
+
+</div>
+
+### 🍎 macOS: Homebrew (Recommended)
+The cleanest, most native experience for Mac users.
 
 ```bash
-# 1. Add the Tap (a one-time setup)
+# Add the tap and install (one-time setup)
 brew tap yigitkonur/context
 brew install yigitkonur/context/context
 ```
 
-### 🪟 Windows: pipx (Recommended)
-`pipx` is the gold standard for installing Python CLI tools. It keeps things tidy and isolated.
+### 🪟 Windows: Scoop (Recommended)
+[Scoop](https://scoop.sh/) is the developer's choice for Windows package management. No admin rights needed!
+
+```powershell
+# First, install Scoop if you don't have it (one-time)
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+
+# Add the bucket and install
+scoop bucket add context https://github.com/yigitkonur/scoop-context
+scoop install context
+```
+
+### 🪟 Windows: pipx (Alternative)
+If you already have Python installed and prefer `pipx`:
 
 ```powershell
 # 1. Install pipx if you don't have it
@@ -126,11 +149,22 @@ python -m pipx ensurepath
 
 # 2. Install the tool
 pipx install repo-to-llm-context
-# OR for latest dev version: pipx install git+https://github.com/yigitkonur/code-to-clipboard-for-llms.git
 ```
 
-### 🐧 Linux & Others: pipx
-For Linux users who prefer pipx over Homebrew:
+### 🐧 Linux: Homebrew (Recommended)
+Homebrew works great on Linux too!
+
+```bash
+# Install Homebrew for Linux (if not installed)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Add the tap and install
+brew tap yigitkonur/context
+brew install yigitkonur/context/context
+```
+
+### 🐧 Linux: pipx (Alternative)
+For Linux users who prefer `pipx` over Homebrew:
 
 ```bash
 # 1. Install pipx if you don't have it
@@ -366,6 +400,15 @@ If you fork the repo, you can permanently change the default filters by editing 
 | **Clipboard isn't working** | **Linux users:** You might need a clipboard utility. Run `sudo apt install xclip` or `sudo pacman -S xclip`. For any OS, you can always use `--stdout` or `--output my_context.md` to bypass the clipboard. |
 | **`.gitignore` is ignored** | Make sure you have `gitignore-parser` installed. The tool uses `.gitignore` by default. Use `--no-gitignore` to disable. |
 | **Script errors out** | Make sure you're on Python 3.8 or newer (`python3 --version`). |
+
+**Windows-specific issues:**
+
+| Problem | Solution |
+| :--- | :--- |
+| **Scoop install fails** | Make sure you've enabled script execution: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` |
+| **`context` not recognized in PowerShell** | Close and reopen PowerShell, or run `scoop reset context` to refresh the shim. |
+| **Permission denied errors** | Scoop installs to user directory, so admin rights shouldn't be needed. If using pipx, run PowerShell as Administrator. |
+| **Python not found (pipx method)** | Download Python from [python.org](https://www.python.org/downloads/) and ensure "Add Python to PATH" is checked during installation. |
 
 </details>
 
