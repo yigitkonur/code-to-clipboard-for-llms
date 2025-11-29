@@ -116,17 +116,29 @@ brew tap yigitkonur/context
 brew install yigitkonur/context/context
 ```
 
-### 🪟 Windows & Others: pipx (Recommended)
+### 🪟 Windows: pipx (Recommended)
 `pipx` is the gold standard for installing Python CLI tools. It keeps things tidy and isolated.
+
+```powershell
+# 1. Install pipx if you don't have it
+python -m pip install --user pipx
+python -m pipx ensurepath
+
+# 2. Install the tool
+pipx install repo-to-llm-context
+# OR for latest dev version: pipx install git+https://github.com/yigitkonur/code-to-clipboard-for-llms.git
+```
+
+### 🐧 Linux & Others: pipx
+For Linux users who prefer pipx over Homebrew:
 
 ```bash
 # 1. Install pipx if you don't have it
 python3 -m pip install --user pipx
 python3 -m pipx ensurepath
 
-# 2. Install the tool (from PyPI once published, or from GitHub for latest)
+# 2. Install the tool
 pipx install repo-to-llm-context
-# OR for latest dev version: pipx install git+https://github.com/yigitkonur/code-to-clipboard-for-llms.git
 ```
 
 > **✨ Zero Manual Setup:** After installation, the `context` command should be ready to go. If not, just restart your terminal!
