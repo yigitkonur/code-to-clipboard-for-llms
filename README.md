@@ -151,7 +151,41 @@ Your clipboard is now loaded with perfectly formatted Markdown.
 **3. Paste & Prompt**
 Go to your favorite LLM and paste the context. Now you can ask the real questions.
 
-### 📏 Large File Control (NEW!)
+### � GitHub Repository Support (NEW!)
+
+You can now clone and analyze any public GitHub repository directly without downloading it locally!
+
+**Supported Formats:**
+- `owner/repo` - Shorthand format
+- `owner/repo@branch` - Specific branch
+- `https://github.com/owner/repo` - Full URL
+- `github.com/owner/repo` - Short URL
+
+**Examples:**
+```bash
+# Clone and scan a repository
+context sindresorhus/is-online
+
+# Scan specific branch
+context facebook/react@main
+
+# Full GitHub URL
+context https://github.com/torvalds/linux
+
+# With filtering options
+context owner/repo --include "*.py" --preview
+
+# Output to file instead of clipboard
+context owner/repo --output analysis.md
+```
+
+The tool automatically:
+- Performs shallow clones for speed
+- Manages temporary directories (auto-cleanup on exit)
+- Shows GitHub source links in output
+- Applies the same intelligent filtering to remote repositories
+
+### �📏 Large File Control (NEW!)
 
 Got massive JSON files or generated code breaking your LLM context? We've got you covered.
 
