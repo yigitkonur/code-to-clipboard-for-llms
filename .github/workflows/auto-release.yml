@@ -8,10 +8,13 @@ on:
       - '.github/workflows/**'
       - 'README.md'
       - '*.md'
+      - 'pyproject.toml'
+      - 'llmcontext.py'
 
 jobs:
   auto-release:
     runs-on: ubuntu-latest
+    concurrency: auto-release
     
     # Skip if commit message contains [skip release] or [no release]
     if: "!contains(github.event.head_commit.message, '[skip release]') && !contains(github.event.head_commit.message, '[no release]')"
