@@ -13,13 +13,16 @@ Architecture:
 from __future__ import annotations
 
 import argparse
+import atexit
 import fnmatch
 import json
 import logging
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.request
 from abc import ABC, abstractmethod
@@ -246,6 +249,241 @@ GLYPH_SPACE = "    "
 
 
 # =============================================================================
+# GITHUB SUPPORT
+# =============================================================================
+
+@dataclass
+class GitHubRepo:
+    """Parsed GitHub repository information."""
+    owner: str
+    name: str
+    branch: Optional[str] = None
+    
+    @property
+    def full_name(self) -> str:
+        return f"{self.owner}/{self.name}"
+    
+    @property
+    def clone_url(self) -> str:
+        return f"https://github.com/{self.owner}/{self.name}.git"
+    
+    @property
+    def display_name(self) -> str:
+        if self.branch:
+            return f"{self.full_name}@{self.branch}"
+        return self.full_name
+
+
+def parse_github_url(input_str: str) -> Optional[GitHubRepo]:
+    """
+    Parse various GitHub URL formats into a GitHubRepo object.
+    
+    Supported formats:
+        - https://github.com/owner/repo
+        - https://github.com/owner/repo.git
+        - https://github.com/owner/repo/tree/branch
+        - github.com/owner/repo
+        - owner/repo
+        - owner/repo@branch
+        - git@github.com:owner/repo.git
+    
+    Returns None if input is not a valid GitHub reference.
+    """
+    input_str = input_str.strip()
+    
+    # Quick check - if it's a valid local path that exists, it's not a GitHub URL
+    if os.path.exists(input_str):
+        return None
+    
+    # Pattern 1: Full HTTPS URL
+    # https://github.com/owner/repo[.git][/tree/branch][/...]
+    https_pattern = re.compile(
+        r'^https?://github\.com/([a-zA-Z0-9_.-]+)/([a-zA-Z0-9_.-]+?)(?:\.git)?(?:/tree/([^/]+))?(?:/.*)?$'
+    )
+    match = https_pattern.match(input_str)
+    if match:
+        return GitHubRepo(
+            owner=match.group(1),
+            name=match.group(2),
+            branch=match.group(3),
+        )
+    
+    # Pattern 2: github.com/owner/repo without https
+    short_url_pattern = re.compile(
+        r'^github\.com/([a-zA-Z0-9_.-]+)/([a-zA-Z0-9_.-]+?)(?:\.git)?(?:/tree/([^/]+))?(?:/.*)?$'
+    )
+    match = short_url_pattern.match(input_str)
+    if match:
+        return GitHubRepo(
+            owner=match.group(1),
+            name=match.group(2),
+            branch=match.group(3),
+        )
+    
+    # Pattern 3: SSH format git@github.com:owner/repo.git
+    ssh_pattern = re.compile(
+        r'^git@github\.com:([a-zA-Z0-9_.-]+)/([a-zA-Z0-9_.-]+?)(?:\.git)?$'
+    )
+    match = ssh_pattern.match(input_str)
+    if match:
+        return GitHubRepo(
+            owner=match.group(1),
+            name=match.group(2),
+        )
+    
+    # Pattern 4: owner/repo[@branch] shorthand
+    # Must have exactly one slash and valid GitHub username/repo format
+    shorthand_pattern = re.compile(
+        r'^([a-zA-Z0-9_.-]+)/([a-zA-Z0-9_.-]+?)(?:@([a-zA-Z0-9_./.-]+))?$'
+    )
+    match = shorthand_pattern.match(input_str)
+    if match:
+        owner = match.group(1)
+        name = match.group(2)
+        branch = match.group(3)
+        
+        # Exclude things that look like relative paths
+        # GitHub usernames can't start with . or - or _
+        if owner.startswith(('.', '-', '_')):
+            return None
+        
+        # Also check it doesn't look like a file extension
+        if '.' in name and not any(c.isalpha() for c in name.split('.')[-1]):
+            return None
+        
+        return GitHubRepo(owner=owner, name=name, branch=branch)
+    
+    return None
+
+
+class GitHubFetcher:
+    """Handles fetching GitHub repositories to temporary directories."""
+    
+    # Track all temp directories for cleanup
+    _temp_dirs: List[Path] = []
+    _cleanup_registered: bool = False
+    
+    @classmethod
+    def _register_cleanup(cls) -> None:
+        """Register cleanup handler to remove temp directories on exit."""
+        if not cls._cleanup_registered:
+            atexit.register(cls._cleanup_all)
+            cls._cleanup_registered = True
+    
+    @classmethod
+    def _cleanup_all(cls) -> None:
+        """Remove all temporary directories."""
+        for temp_dir in cls._temp_dirs:
+            try:
+                if temp_dir.exists():
+                    shutil.rmtree(temp_dir)
+            except Exception as e:
+                logging.warning(f"Failed to cleanup {temp_dir}: {e}")
+    
+    @classmethod
+    def fetch(cls, repo: GitHubRepo, keep_git: bool = False) -> Path:
+        """
+        Clone a GitHub repository to a temporary directory.
+        
+        Args:
+            repo: Parsed GitHub repository info
+            keep_git: If True, keep the .git directory (default: False)
+            
+        Returns:
+            Path to the cloned repository
+            
+        Raises:
+            RuntimeError: If git is not available or clone fails
+        """
+        cls._register_cleanup()
+        
+        # Check git is available
+        try:
+            subprocess.run(
+                ["git", "--version"],
+                capture_output=True,
+                check=True,
+            )
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            raise RuntimeError(
+                "git is not installed or not available in PATH. "
+                "Please install git to clone GitHub repositories."
+            )
+        
+        # Create temp directory
+        temp_dir = Path(tempfile.mkdtemp(prefix=f"llmcontext_{repo.name}_"))
+        cls._temp_dirs.append(temp_dir)
+        
+        clone_path = temp_dir / repo.name
+        
+        # Build clone command
+        cmd = [
+            "git", "clone",
+            "--depth", "1",  # Shallow clone for speed
+            "--single-branch",  # Only clone one branch
+        ]
+        
+        if repo.branch:
+            cmd.extend(["--branch", repo.branch])
+        
+        cmd.extend([repo.clone_url, str(clone_path)])
+        
+        print(f"📥 Cloning {repo.display_name}...", file=sys.stderr)
+        
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=120,  # 2 minute timeout
+            )
+            
+            if result.returncode != 0:
+                error_msg = result.stderr.strip() or result.stdout.strip()
+                
+                # Check for common errors
+                if "Repository not found" in error_msg or "not found" in error_msg.lower():
+                    raise RuntimeError(
+                        f"Repository '{repo.full_name}' not found. "
+                        "Please check the owner/repo name and ensure it's public."
+                    )
+                elif "Could not find remote branch" in error_msg:
+                    raise RuntimeError(
+                        f"Branch '{repo.branch}' not found in {repo.full_name}. "
+                        "Please check the branch name."
+                    )
+                else:
+                    raise RuntimeError(f"Failed to clone repository: {error_msg}")
+                    
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(
+                f"Cloning timed out. The repository might be too large or network is slow."
+            )
+        
+        # Optionally remove .git directory
+        if not keep_git:
+            git_dir = clone_path / ".git"
+            if git_dir.exists():
+                shutil.rmtree(git_dir)
+        
+        print(f"✅ Cloned to temporary directory", file=sys.stderr)
+        
+        return clone_path
+    
+    @classmethod
+    def cleanup(cls, path: Path) -> None:
+        """Manually cleanup a specific temp directory."""
+        parent = path.parent
+        if parent in cls._temp_dirs:
+            try:
+                if parent.exists():
+                    shutil.rmtree(parent)
+                cls._temp_dirs.remove(parent)
+            except Exception as e:
+                logging.warning(f"Failed to cleanup {parent}: {e}")
+
+
+# =============================================================================
 # ENUMS AND DATA MODELS
 # =============================================================================
 
@@ -291,6 +529,9 @@ class ScanConfig:
     
     # Type overrides (extension -> should include)
     type_overrides: Dict[str, bool] = field(default_factory=dict)
+    
+    # GitHub source info (if cloned from GitHub)
+    github_repo: Optional[GitHubRepo] = None
 
 
 @dataclass
@@ -602,7 +843,10 @@ class ConfigBuilder:
     """Builds ScanConfig from CLI arguments."""
     
     @staticmethod
-    def from_args(args: argparse.Namespace) -> ScanConfig:
+    def from_args(
+        args: argparse.Namespace, 
+        github_repo: Optional[GitHubRepo] = None
+    ) -> ScanConfig:
         """Create config from parsed arguments."""
         root = Path(args.root_dir).resolve()
         
@@ -669,6 +913,7 @@ class ConfigBuilder:
             excluded_patterns=frozenset(excluded_patterns),
             included_patterns=frozenset(included_patterns),
             type_overrides=type_overrides,
+            github_repo=github_repo,
         )
     
     @staticmethod
@@ -1075,9 +1320,15 @@ class MarkdownFormatter:
     
     def format_summary(self, result: ScanResult) -> str:
         """Format summary with tree."""
+        # Show GitHub repo info if available, otherwise local path
+        if result.config.github_repo:
+            source_line = f"*GitHub: {result.config.github_repo.display_name}*"
+        else:
+            source_line = f"*Directory: {self._format_path(result.config.root_dir)}*"
+        
         lines = [
             "# 📁 Project Structure",
-            f"*Directory: {self._format_path(result.config.root_dir)}*",
+            source_line,
             "",
         ]
         
@@ -1098,9 +1349,15 @@ class MarkdownFormatter:
     
     def format_full(self, result: ScanResult) -> str:
         """Format complete output with file contents."""
+        # Show GitHub repo info if available, otherwise local path
+        if result.config.github_repo:
+            source_line = f"*GitHub: [`{result.config.github_repo.display_name}`](https://github.com/{result.config.github_repo.full_name})*"
+        else:
+            source_line = f"*Directory: `{self._format_path(result.config.root_dir)}`*"
+        
         lines = [
             "# 📁 Project Context",
-            f"*Directory: `{self._format_path(result.config.root_dir)}`*",
+            source_line,
             "",
         ]
         
@@ -1201,15 +1458,27 @@ class JsonFormatter:
         total_lines = sum(f.line_count for f in result.files)
         total_chars = sum(f.char_count for f in result.files)
         
+        # Build project info with optional GitHub details
+        project_info = {
+            "files": len(result.files),
+            "lines": total_lines,
+            "chars": total_chars,
+            "scanned": result.total_scanned,
+            "tech_stack": list(result.tech_stack),
+        }
+        
+        if result.config.github_repo:
+            project_info["github"] = {
+                "owner": result.config.github_repo.owner,
+                "repo": result.config.github_repo.name,
+                "branch": result.config.github_repo.branch,
+                "url": f"https://github.com/{result.config.github_repo.full_name}",
+            }
+        else:
+            project_info["root"] = str(result.config.root_dir)
+        
         output = {
-            "project": {
-                "root": str(result.config.root_dir),
-                "files": len(result.files),
-                "lines": total_lines,
-                "chars": total_chars,
-                "scanned": result.total_scanned,
-                "tech_stack": list(result.tech_stack),
-            },
+            "project": project_info,
             "files": [
                 {
                     "path": str(f.relative_path),
@@ -1367,12 +1636,18 @@ def create_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  context                      # Scan current dir, copy to clipboard
-  context ./src                # Scan specific directory
-  context -o output.md         # Write to file
-  context --include-json       # Include JSON files
-  context --include "*.py"     # Include only Python files
-  context --preview            # Preview what would be included
+  context                           # Scan current dir, copy to clipboard
+  context ./src                     # Scan specific directory
+  context -o output.md              # Write to file
+  context --include-json            # Include JSON files
+  context --include "*.py"          # Include only Python files
+  context --preview                 # Preview what would be included
+
+GitHub Repository Support:
+  context owner/repo                # Clone and scan GitHub repo
+  context owner/repo@branch         # Clone specific branch
+  context https://github.com/o/r    # Full GitHub URL
+  context github.com/owner/repo     # Short GitHub URL
         """,
     )
     
@@ -1380,9 +1655,9 @@ Examples:
     parser.add_argument(
         "root_dir",
         nargs="?",
-        type=Path,
-        default=Path("."),
-        help="Root project directory (default: current)",
+        type=str,
+        default=".",
+        help="Root project directory or GitHub repo (owner/repo, URL)",
     )
     
     # Output options
@@ -1519,6 +1794,22 @@ def main() -> int:
             print("✅ You're running the latest version!")
         return 0
     
+    # Check if input is a GitHub URL/reference
+    github_repo = parse_github_url(args.root_dir)
+    is_github = github_repo is not None
+    
+    if is_github:
+        try:
+            # Clone the repository
+            cloned_path = GitHubFetcher.fetch(github_repo)
+            args.root_dir = cloned_path
+        except RuntimeError as e:
+            print(f"❌ {e}", file=sys.stderr)
+            return 1
+    else:
+        # Convert to Path for local directories
+        args.root_dir = Path(args.root_dir)
+    
     # Interactive mode
     if args.interactive:
         args = InteractiveConfig.run(args)
@@ -1532,7 +1823,7 @@ def main() -> int:
         start = time.time()
         
         # Build configuration
-        config = ConfigBuilder.from_args(args)
+        config = ConfigBuilder.from_args(args, github_repo)
         
         # Load git data
         gitignore = None
