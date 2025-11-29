@@ -9,19 +9,47 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Update Homebrew formula
-      uses: dawidd6/action-homebrew-bump-formula@v3
+    - name: Checkout homebrew tap
+      uses: actions/checkout@v4
       with:
+        repository: yigitkonur/homebrew-context
         token: ${{ secrets.HOMEBREW_GITHUB_TOKEN }}
-        tap: yigitkonur/homebrew-context
-        formula: context
-        tag: ${{ github.ref_name }}
-        revision: ${{ github.sha }}
-        force: false
-    
-    - name: Verify Homebrew formula update with sleep
+        path: homebrew-tap
+
+    - name: Update formula version and SHA
+      run: |
+        cd homebrew-tap
+        
+        # Get the release tag (e.g., v3.1.0)
+        VERSION="${{ github.ref_name }}"
+        VERSION_NUM="${VERSION#v}"  # Remove 'v' prefix for version number
+        
+        # Download the release tarball and calculate SHA256
+        TARBALL_URL="https://github.com/yigitkonur/code-to-clipboard-for-llms/archive/refs/tags/${VERSION}.tar.gz"
+        SHA256=$(curl -sL "$TARBALL_URL" | shasum -a 256 | cut -d ' ' -f 1)
+        
+        echo "Version: $VERSION_NUM"
+        echo "SHA256: $SHA256"
+        
+        # Update the formula
+        sed -i "s|url \".*\"|url \"$TARBALL_URL\"|" Formula/context.rb
+        sed -i "s|sha256 \".*\"|sha256 \"$SHA256\"|" Formula/context.rb
+        sed -i "s|version \".*\"|version \"$VERSION_NUM\"|" Formula/context.rb
+        
+        cat Formula/context.rb
+
+    - name: Commit and push changes
+      run: |
+        cd homebrew-tap
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add Formula/context.rb
+        git diff --staged --quiet || git commit -m "Update context to ${{ github.ref_name }}"
+        git push
+
+    - name: Verify Homebrew formula update
       run: |
         echo "Waiting for formula update to propagate..."
-        sleep 15
+        sleep 10
         echo "Checking if formula was updated..."
-        curl -f "https://raw.githubusercontent.com/yigitkonur/homebrew-context/main/Formula/context.rb" | grep -q "${{ github.ref_name }}" && echo "Formula updated successfully" || echo "Formula may still be updating"
+        curl -sf "https://raw.githubusercontent.com/yigitkonur/homebrew-context/main/Formula/context.rb" | head -20
