@@ -9,7 +9,9 @@
     "repo-to-prompt": "dist/cli.js",
     "context": "dist/cli.js",
     "llmcontext": "dist/cli.js",
-    "repocp": "dist/cli.js"
+    "repocp": "dist/cli.js",
+    "repo2prompt": "dist/cli.js",
+    "repo2cp": "dist/cli.js"
   },
   "files": [
     "dist"

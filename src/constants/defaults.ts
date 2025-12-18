@@ -66,7 +66,6 @@ export const ExcludedPatterns = new Set([
 export const DataPatterns = new Set([
   '*.json', '*.jsonc', '*.yaml', '*.yml', '*.xml',
   '*.html', '*.htm', '*.css', '*.sql', '*.csv', '*.tsv',
-  '*.md', '*.markdown', '*.rst',
 ]);
 
 export const ConfigSkip = new Set([

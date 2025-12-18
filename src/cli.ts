@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { basename, resolve } from 'node:path';
 import chalk from 'chalk';
 import ora from 'ora';
 
@@ -17,6 +17,7 @@ import { formatPreview, formatSummary, formatFull } from './formatters/markdown.
 import { formatJson } from './formatters/json.js';
 import { writeOutput } from './output/writer.js';
 import { runInteractiveConfig } from './interactive/wizard.js';
+import { ensureFirstRunSetup } from './interactive/firstRun.js';
 import { Defaults } from './constants/defaults.js';
 import { checkForUpdates } from './version.js';
 
@@ -135,6 +136,9 @@ async function run(rootDirArg: string, opts: Record<string, unknown>): Promise<v
     }
     return;
   }
+
+  const invokedName = basename(process.argv[1] ?? '') || 'repo-to-prompt';
+  await ensureFirstRunSetup(invokedName === 'cli.js' ? 'repo-to-prompt' : invokedName);
 
   // Check if input is a GitHub URL/reference
   let rootDir = rootDirArg;
