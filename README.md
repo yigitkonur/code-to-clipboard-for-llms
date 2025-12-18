@@ -1,421 +1,206 @@
-<h1 align="center">📦 repo-to-llm-context 📦</h1>
-<h3 align="center">Stop copy-pasting code. Start shipping smarter prompts.</h3>
+# repo-to-prompt
 
-<p align="center">
- <strong>
-    <em>the ultimate context packer for your AI coding assistant. it scans your repo, ditches the junk, and bundles the good stuff into one perfect, clipboard-ready prompt.</em>
-  </strong>
-</p>
+> Gather project context for LLMs — intelligently scan repositories and format for AI consumption.
 
-<p align="center">
-  <!-- Package Info -->
-  <a href="#"><img alt="pypi" src="https://img.shields.io/pypi/v/repo-to-llm-context.svg?style=flat-square&color=4D87E6"></a>
-  <a href="#"><img alt="python" src="https://img.shields.io/badge/python-3.6+-4D87E6.svg?style=flat-square"></a>
-  &nbsp;&nbsp;•&nbsp;&nbsp;
-  <!-- Features -->
-  <a href="#"><img alt="license" src="https://img.shields.io/badge/License-MIT-F9A825.svg?style=flat-square"></a> 
-  <a href="#"><img alt="platform" src="https://img.shields.io/badge/platform-macOS_|_Linux_|_Windows-2ED573.svg?style=flat-square"></a>
-</p>
+[![npm version](https://img.shields.io/npm/v/repo-to-prompt.svg)](https://www.npmjs.com/package/repo-to-prompt)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-<p align="center">
-  <img alt="zero config" src="https://img.shields.io/badge/⚙️_zero_config-works_out_of_the_box-2ED573.svg?style=for-the-badge">
-  <img alt="clipboard ready" src="https://img.shields.io/badge/📋_clipboard_ready-one_command_to_copy-2ED573.svg?style=for-the-badge">
-</p>
+## Why?
 
-<div align="center">
-  
-### 🧭 Quick Navigation
+When working with AI coding assistants, you often need to share your project's context. Manually copying files is tedious and error-prone. **repo-to-prompt** intelligently scans your codebase, respects `.gitignore`, filters out noise, and formats everything into clean Markdown ready for LLMs.
 
-[**⚡ Get Started**](#-get-started-in-60-seconds) • 
-[**✨ Key Features**](#-feature-breakdown-the-secret-sauce) • 
-[**🎮 Usage & Examples**](#-usage-fire-and-forget) • 
-[**⚙️ Advanced Flags**](#️-advanced-usage--customization) •
-[**🆚 Comparison**](#-why-this-slaps-other-methods)
+## Features
 
-</div>
+- 📁 **Smart Scanning** — Respects `.gitignore`, skips binaries, build artifacts, and node_modules
+- 🐙 **GitHub Support** — Clone and scan any public repository directly
+- 📋 **Clipboard Ready** — Copies to clipboard by default, ready to paste
+- 🌲 **Tree Visualization** — Beautiful project structure display
+- 🔍 **Tech Detection** — Automatically detects your stack
+- ⚡ **Fast** — Built on native ESM with fast-glob
 
----
-
-**`repo-to-llm-context`** is the project manager your AI assistant wishes it had. Stop feeding your LLM random files and praying for a good answer. This tool acts like a pro developer, reading your entire project, intelligently selecting the most relevant files, and packaging them into a perfectly structured prompt so your AI can actually understand what the hell is going on.
-
-<div align="center">
-<table>
-<tr>
-<td align="center">
-<h3>🧠</h3>
-<b>Smart Filtering</b><br/>
-<sub>Ditches node_modules & junk</sub>
-</td>
-<td align="center">
-<h3>🎯</h3>
-<b>Relevance Scoring</b><br/>
-<sub>Puts the important code first</sub>
-</td>
-<td align="center">
-<h3>📋</h3>
-<b>Clipboard Ready</b><br/>
-<sub>One command, ready to paste</sub>
-</td>
-</tr>
-</table>
-</div>
-
-How it slaps:
--  **You:** `cd my-project && context`
--  **`context`:** Scans, filters, scores, formats, and copies.
--  **You:** `Cmd+V` into Claude/ChatGPT/Gemini.
--  **LLM:** "Ah, I see. A well-structured project. Here is your god-tier answer."
-
----
-
-## 💥 Why This Slaps Other Methods
-
-Manually prepping context is a vibe-killer. `repo-to-llm-context` makes other methods look ancient.
-
-<table align="center">
-<tr>
-<td align="center"><b>❌ The Old Way (Pain)</b></td>
-<td align="center"><b>✅ The `context` Way (Glory)</b></td>
-</tr>
-<tr>
-<td>
-<ol>
-  <li>Open 15 files in VS Code.</li>
-  <li>Frantically copy-paste into a text file.</li>
-  <li>Realize you forgot the Dockerfile.</li>
-  <li>Curse as you hit the token limit.</li>
-  <li>Get a mediocre answer from a confused LLM.</li>
-</ol>
-</td>
-<td>
-<ol>
-  <li><code>cd my-project</code></li>
-  <li><code>context</code></li>
-  <li>Paste.</li>
-  <li>Receive genius-level insights.</li>
-  <li>Go grab a coffee. ☕</li>
-</ol>
-</td>
-</tr>
-</table>
-
-We're not just concatenating files. We're building a **high-signal, low-noise prompt** with intelligent depth-first traversal that processes directories systematically, prioritizes README files, and prevents massive files from breaking your LLM's context window.
-
----
-
-## 🚀 Get Started in 60 Seconds
-
-The `context` command will be available in your terminal after installation.
-
-<div align="center">
-
-| Platform | Recommended Method | One-liner |
-|:--------:|:------------------:|:----------|
-| 🍎 **macOS** | Homebrew | `brew install yigitkonur/context/context` |
-| 🪟 **Windows** | Scoop | `scoop bucket add context https://github.com/yigitkonur/scoop-context && scoop install context` |
-| 🐧 **Linux** | Homebrew | `brew install yigitkonur/context/context` |
-
-</div>
-
-### 🍎 macOS: Homebrew (Recommended)
-The cleanest, most native experience for Mac users.
+## Installation
 
 ```bash
-# Add the tap and install (one-time setup)
-brew tap yigitkonur/context
-brew install yigitkonur/context/context
+# Run instantly with npx (no install)
+npx repo-to-prompt
+
+# Or install globally
+npm install -g repo-to-prompt
 ```
 
-### 🪟 Windows: Scoop (Recommended)
-[Scoop](https://scoop.sh/) is the developer's choice for Windows package management. No admin rights needed!
-
-```powershell
-# First, install Scoop if you don't have it (one-time)
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
-
-# Add the bucket and install
-scoop bucket add context https://github.com/yigitkonur/scoop-context
-scoop install context
+After global install, use any of these aliases:
+```bash
+repo-to-prompt .
+context .
+llmcontext .
+repocp .
 ```
 
-### 🪟 Windows: pipx (Alternative)
-If you already have Python installed and prefer `pipx`:
-
-```powershell
-# 1. Install pipx if you don't have it
-python -m pip install --user pipx
-python -m pipx ensurepath
-
-# 2. Install the tool
-pipx install repo-to-llm-context
-```
-
-### 🐧 Linux: Homebrew (Recommended)
-Homebrew works great on Linux too!
+## Quick Start
 
 ```bash
-# Install Homebrew for Linux (if not installed)
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+# Scan current directory → clipboard
+npx repo-to-prompt
 
-# Add the tap and install
-brew tap yigitkonur/context
-brew install yigitkonur/context/context
+# Scan specific folder
+npx repo-to-prompt ./src
+
+# Scan GitHub repo
+npx repo-to-prompt owner/repo
+
+# Write to file
+npx repo-to-prompt -o context.md
+
+# Preview what will be included
+npx repo-to-prompt --preview
 ```
 
-### 🐧 Linux: pipx (Alternative)
-For Linux users who prefer `pipx` over Homebrew:
+## Usage Examples
+
+### Basic
 
 ```bash
-# 1. Install pipx if you don't have it
-python3 -m pip install --user pipx
-python3 -m pipx ensurepath
+# Current directory to clipboard
+repo-to-prompt
 
-# 2. Install the tool
-pipx install repo-to-llm-context
+# Specific directory
+repo-to-prompt ./backend
+
+# Output to file
+repo-to-prompt -o output.md
+
+# Print to stdout
+repo-to-prompt --stdout
 ```
 
-> **✨ Zero Manual Setup:** After installation, the `context` command should be ready to go. If not, just restart your terminal!
+### GitHub Repositories
 
----
-
-## 🎮 Usage: Fire and Forget
-
-The workflow is dead simple.
-
-**1. Navigate to Your Project**
 ```bash
-cd /path/to/your/killer-app
+# Clone and scan
+repo-to-prompt facebook/react
+
+# Specific branch
+repo-to-prompt vercel/next.js@canary
+
+# Full URL
+repo-to-prompt https://github.com/microsoft/typescript
 ```
 
-**2. Run the Command**
+### Filtering
+
 ```bash
-context
+# Include only Python files
+repo-to-prompt --include "*.py" --include-only
+
+# Exclude test files
+repo-to-prompt --exclude "*.test.ts" --exclude "*.spec.ts"
+
+# Include data files (off by default)
+repo-to-prompt --include-json --include-yaml --include-markdown
+
+# Limit depth
+repo-to-prompt --max-depth 3
 ```
-Your clipboard is now loaded with perfectly formatted Markdown.
 
-**3. Paste & Prompt**
-Go to your favorite LLM and paste the context. Now you can ask the real questions.
+### Output Control
 
-### � GitHub Repository Support (NEW!)
-
-You can now clone and analyze any public GitHub repository directly without downloading it locally!
-
-**Supported Formats:**
-- `owner/repo` - Shorthand format
-- `owner/repo@branch` - Specific branch
-- `https://github.com/owner/repo` - Full URL
-- `github.com/owner/repo` - Short URL
-
-**Examples:**
 ```bash
-# Clone and scan a repository
-context sindresorhus/is-online
+# Preview files (no content)
+repo-to-prompt --preview
 
-# Scan specific branch
-context facebook/react@main
+# Dry run (stats only)
+repo-to-prompt --dry-run
 
-# Full GitHub URL
-context https://github.com/torvalds/linux
+# JSON format
+repo-to-prompt --format json
 
-# With filtering options
-context owner/repo --include "*.py" --preview
-
-# Output to file instead of clipboard
-context owner/repo --output analysis.md
+# Show stats with output
+repo-to-prompt --show-stats
 ```
 
-The tool automatically:
-- Performs shallow clones for speed
-- Manages temporary directories (auto-cleanup on exit)
-- Shows GitHub source links in output
-- Applies the same intelligent filtering to remote repositories
+## Options
 
-### �📏 Large File Control (NEW!)
+### Output
+| Option | Description |
+|--------|-------------|
+| `-o, --output <file>` | Write to file |
+| `--stdout` | Print to stdout |
+| `--no-clipboard` | Don't copy to clipboard |
+| `--format <type>` | `markdown` (default) or `json` |
 
-Got massive JSON files or generated code breaking your LLM context? We've got you covered.
+### Filtering
+| Option | Description |
+|--------|-------------|
+| `--include <pattern>` | Include glob pattern |
+| `--exclude <pattern>` | Exclude glob pattern |
+| `--include-only` | Only include matching patterns |
+| `--max-size <size>` | Max file size (default: `2M`) |
+| `--max-depth <n>` | Max directory depth |
+| `--include-binary` | Include binary files |
 
-*   **Skip large files entirely:**
-    ```bash
-    context --skip-large-files --max-file-chars 5000
-    ```
-*   **Truncate large files with smart preview:**
-    ```bash
-    context --truncate-large-files --max-file-chars 8000
-    ```
-*   **Custom limits for different projects:**
-    ```bash
-    context --max-file-chars 15000 --truncate-large-files
-    ```
+### File Types
+| Option | Description |
+|--------|-------------|
+| `--include-json` | Include JSON files |
+| `--include-yaml` | Include YAML/YML files |
+| `--include-markdown` | Include Markdown files |
+| `--include-html` | Include HTML files |
+| `--include-css` | Include CSS files |
+| `--include-sql` | Include SQL files |
+| `--include-csv` | Include CSV files |
+| `--include-xml` | Include XML files |
 
-The tool shows exactly what it's doing:
+### Git
+| Option | Description |
+|--------|-------------|
+| `--no-gitignore` | Ignore .gitignore |
+| `--use-git` | Only include git-tracked files |
+
+### Features
+| Option | Description |
+|--------|-------------|
+| `--preview` | Preview files without content |
+| `--dry-run` | Show stats only |
+| `--interactive` | Interactive configuration |
+| `--sort-alpha` | Sort alphabetically |
+| `--check-updates` | Check for updates |
+
+## Output Example
+
+```markdown
+# 📁 Project Context
+*Directory: `~/my-project`*
+
+## Overview
+- **Stack:** TypeScript, React
+- **Files:** 24
+- **Lines:** 2,456
+
+## Structure
+.
+├── 📁 src
+│   ├── 📄 index.ts (50L)
+│   └── 📁 components
+│       └── 📄 App.tsx (120L)
+└── 📄 package.json (30L)
+
+---
+
+## Source Files
+
+### 📘 `src/index.ts`
+*50 lines • 1,234 chars*
+
+\`\`\`typescript
+// Your code here...
+\`\`\`
 ```
-INFO: Truncated response.json: 1,487,897 → 10,075 chars
-Success: 530,745 chars copied to clipboard
-```
 
-### Output Control 🕹️
+## Requirements
 
-Don't want it on your clipboard? No problem.
+- **Node.js 18+**
+- **git** (for GitHub cloning)
 
-*   **Save to a file:**
-    ```bash
-    context --output project_context.md
-    ```
-*   **Print directly to your terminal (for piping or peeking):**
-    ```bash
-    context --stdout
-    ```
+## License
 
----
-
-## ✨ Feature Breakdown: The Secret Sauce
-
-<div align="center">
-
-| Feature | What It Does | Why You Care |
-| :---: | :--- | :--- |
-| **🧠 Smart Filtering**<br/>`No junk allowed` | Auto-excludes `node_modules`, `venv`, `builds`, `.git`, logs & more | Stops you from wasting tokens on garbage |
-| **🎯 Depth-First Sorting**<br/>`Perfect file order` | Traverses directories systematically, README.md files first | Your LLM gets context in logical, hierarchical order |
-| **📏 Large File Control**<br/>`Token-aware sizing` | Skip or truncate files over configurable limits (default: 50K chars) | Never blow your LLM's context window again |
-| **🏗️ Project Tree**<br/>`Visual context` | Includes a `tree`-style view of what's included | The AI (and you) can see the project structure |
-| **⚙️ Git-Aware**<br/>`Respects your repo` | Can read your `.gitignore` and check tracking status | Context matches your actual source code |
-| **📋 Clipboard Ready**<br/>`Cmd+C on steroids` | Copies the entire formatted output in one go | Zero manual work between terminal and AI |
-| **🔧 Hyper-Configurable**<br/>`You're the boss` | Flags to include/exclude anything you want | Fine-tune the context for any weird project |
-| **🔒 Privacy First**<br/>`No path leaks` | Masks your local home directory path in the summary | Share your code, not your user folder |
-| **🎯 Interactive Mode**<br/>`Guided setup` | Run `--interactive` for a step-by-step config wizard | Perfect for first-time users or complex setups |
-
-</div>
-
----
-
-## ⚙️ Advanced Usage & Customization
-
-The defaults are great, but you can dial it in just right.
-
-<details>
-<summary><b>Expand for the full list of command-line flags</b></summary>
-
-#### Filtering and Inclusion Control
-
-*   `--include PATTERN`: Glob pattern to force inclusion of files/directories that might be excluded (e.g., `--include "config/**.yaml"`).
-*   `--exclude PATTERN`: Glob pattern to add custom exclusions beyond the defaults (e.g., `--exclude "*.log"`).
-*   `--include-only`: A powerful mode that includes *only* files matching `--include` patterns, excluding everything else.
-*   `--exclude-extension EXT`: Exclude all files with a specific extension (e.g., `--exclude-extension .tmp`).
-*   `--include-extension EXT`: Force include files with an extension that is normally excluded by default.
-
-#### Override Default File Type Exclusions
-
-*   `--include-json`: Include `.json` / `.jsonc` files.
-*   `--include-yaml`: Include `.yaml` / `.yml` files.
-*   `--include-xml`: Include `.xml` files.
-*   `--include-html`: Include `.html` / `.htm` files.
-*   `--include-css`: Include `.css` files.
-*   `--include-sql`: Include `.sql` files.
-*   `--include-csv`: Include `.csv` / `.tsv` files.
-*   `--include-markdown`: Include all Markdown files, not just the root `README.md`.
-
-#### Size and Content Control
-
-*   `--max-size SIZE`: Exclude files larger than the specified size (e.g., `500k`, `10M`). Default is `2M`.
-*   `--max-file-chars N`: Set maximum characters per file (default: 50,000). Works with skip/truncate options.
-*   `--skip-large-files`: Skip files that exceed the `--max-file-chars` limit entirely.
-*   `--truncate-large-files`: Keep large files but show only the first N characters with a truncation notice.
-*   `--include-binary`: Attempt to include files detected as binary (default is to exclude them).
-*   `--max-depth N`: Limit scanning to a maximum directory depth.
-
-#### Git Integration Behavior
-
-*   `--no-gitignore`: Ignore `.gitignore` rules and Git tracking status entirely.
-*   `--gitignore-only`: (Default) Use `.gitignore` rules for exclusion but *don't* filter based on Git tracking status.
-*   `--use-git`: Use both `.gitignore` rules and only include files that are tracked by Git.
-
-#### Output and Execution Behavior
-
-*   `--output FILE`: Write output to a file instead of the clipboard.
-*   `--stdout`: Print the full output to the terminal.
-*   `--no-clipboard`: Disable automatic copying to the clipboard (useful when using `--stdout` or `--output`).
-*   `--preview`: Show a summary of what would be included without processing files or generating output.
-*   `--dry-run`: Run the entire process but do not write any output to the clipboard, file, or stdout.
-*   `--sort-alpha`: Override the relevance-based sorting and sort files alphabetically instead.
-
-#### Information
-
-*   `--version`: Display the current version and exit.
-*   `--check-updates`: Check for available updates.
-
-</details>
-
----
-
-## 🆚 Why This Slaps Other Methods
-
-<div align="center">
-
-| Method | The Pain 😩 | The `context` Way 😎 |
-| :--- | :--- | :--- |
-| **Manual Copy/Paste** | You'll miss a file. You'll include junk. You'll hate your life. | One command. Perfect context. Every time. |
-| **`cat file1 file2 > out.txt`** | Zero structure. No filtering. Still manual. Basically useless. | Auto-filters, adds a file tree, and formats beautifully. |
-| **Sharing a GitHub Link** | LLM can't see local changes. Can't access private repos. | Works offline. Works on your latest, unpushed code. |
-| **Simple `tree` command** | Shows structure but includes zero code content. | Gives you the full package: structure AND content. |
-
-</div>
-
----
-
-## 🛠️ For Developers & Tinkerers
-
-### Running from Source
-
-Want to hack on the code? Easy.
-
-1.  **Clone the repo:**
-    ```bash
-    git clone https://github.com/yigitkonur/code-to-clipboard-for-llms.git
-    cd code-to-clipboard-for-llms
-    ```
-
-2.  **Set up a virtual environment and install in editable mode:**
-    ```bash
-    python3 -m venv venv
-    source venv/bin/activate
-    pip install -e .
-    ```
-    Now, any change you make to `llmcontext.py` will be live on your `context` command.
-
-### Fork & Customize
-
-If you fork the repo, you can permanently change the default filters by editing the constants at the top of `llmcontext.py`.
-
----
-
-## 🔥 Common Issues & Quick Fixes
-
-<details>
-<summary><b>Expand for troubleshooting tips</b></summary>
-
-| Problem | Solution |
-| :--- | :--- |
-| **`context: command not found`** | **Restart your terminal.** 99% of the time, this is the fix. If not, run `pipx ensurepath` (for pipx) or check your `PATH` environment variable. |
-| **Clipboard isn't working** | **Linux users:** You might need a clipboard utility. Run `sudo apt install xclip` or `sudo pacman -S xclip`. For any OS, you can always use `--stdout` or `--output my_context.md` to bypass the clipboard. |
-| **`.gitignore` is ignored** | Make sure you have `gitignore-parser` installed. The tool uses `.gitignore` by default. Use `--no-gitignore` to disable. |
-| **Script errors out** | Make sure you're on Python 3.8 or newer (`python3 --version`). |
-
-**Windows-specific issues:**
-
-| Problem | Solution |
-| :--- | :--- |
-| **Scoop install fails** | Make sure you've enabled script execution: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` |
-| **`context` not recognized in PowerShell** | Close and reopen PowerShell, or run `scoop reset context` to refresh the shim. |
-| **Permission denied errors** | Scoop installs to user directory, so admin rights shouldn't be needed. If using pipx, run PowerShell as Administrator. |
-| **Python not found (pipx method)** | Download Python from [python.org](https://www.python.org/downloads/) and ensure "Add Python to PATH" is checked during installation. |
-
-</details>
-
----
-
-<div align="center">
-
-**Built with 🔥 because manually crafting LLM prompts is a soul-crushing waste of time.**
-
-</div>
+MIT © [Yigit Konur](https://github.com/yigitkonur)

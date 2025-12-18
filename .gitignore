@@ -1,9 +1,25 @@
-__pycache__/
-*.egg-info/
-build/
+# Dependencies
+node_modules/
+
+# Build output
 dist/
-.pytest_cache/
-*.pyc
-*.pyo
-*.pyd
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test
+coverage/
+
+# Misc
+*.tgz

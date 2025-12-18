@@ -1,0 +1,65 @@
+{
+  "name": "repo-to-prompt",
+  "version": "1.0.0",
+  "description": "Gather project context for LLMs - intelligently scan repositories and format for AI consumption",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "repo-to-prompt": "dist/cli.js",
+    "context": "dist/cli.js",
+    "llmcontext": "dist/cli.js",
+    "repocp": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "llm",
+    "ai",
+    "context",
+    "repository",
+    "code",
+    "prompt",
+    "gpt",
+    "claude",
+    "chatgpt",
+    "cli"
+  ],
+  "author": "Yigit Konur",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yigitkonur/repo-to-prompt.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yigitkonur/repo-to-prompt/issues"
+  },
+  "homepage": "https://github.com/yigitkonur/repo-to-prompt#readme",
+  "dependencies": {
+    "@inquirer/prompts": "^8.1.0",
+    "chalk": "^5.6.2",
+    "clipboardy": "^5.0.2",
+    "commander": "^14.0.2",
+    "globby": "^16.0.0",
+    "ignore": "^7.0.5",
+    "minimatch": "^10.1.1",
+    "ora": "^9.0.0",
+    "simple-git": "^3.30.0",
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  }
+}
