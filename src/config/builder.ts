@@ -134,7 +134,7 @@ export function getDefaultOptions(): CLIOptions {
     includeCss: false,
     includeSql: false,
     includeCsv: false,
-    includeMarkdown: false,
+    includeMarkdown: true,
     maxFileChars: Defaults.MAX_FILE_CHARS,
     skipLargeFiles: false,
     truncateLargeFiles: false,
