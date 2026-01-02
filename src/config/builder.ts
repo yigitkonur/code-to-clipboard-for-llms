@@ -101,6 +101,7 @@ export function buildConfig(
     maxDepth: options.maxDepth,
     includeBinary: options.includeBinary,
     sortAlphabetically: options.sortAlpha,
+    lineNumbers: options.lineNumbers,
     includeOnlyMode: options.includeOnly,
     truncateLargeFiles: options.truncateLargeFiles,
     skipLargeFiles: options.skipLargeFiles,
@@ -143,6 +144,7 @@ export function getDefaultOptions(): CLIOptions {
     interactive: false,
     showStats: false,
     sortAlpha: false,
+    lineNumbers: false,
     checkUpdates: false,
   };
 }

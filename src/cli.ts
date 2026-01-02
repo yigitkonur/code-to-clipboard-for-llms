@@ -21,7 +21,7 @@ import { ensureFirstRunSetup } from './interactive/firstRun.js';
 import { Defaults } from './constants/defaults.js';
 import { checkForUpdates } from './version.js';
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 
 const program = new Command();
 
@@ -73,6 +73,7 @@ program
   .option('--interactive', 'Interactive configuration')
   .option('--show-stats', 'Show stats alongside output')
   .option('--sort-alpha', 'Sort files alphabetically')
+  .option('-n, --line-numbers', 'Add line numbers to code output (like cat -n)')
 
   // Meta
   .option('--check-updates', 'Check for updates')
@@ -121,6 +122,7 @@ async function run(rootDirArg: string, opts: Record<string, unknown>): Promise<v
     interactive: Boolean(opts.interactive),
     showStats: Boolean(opts.showStats),
     sortAlpha: Boolean(opts.sortAlpha),
+    lineNumbers: Boolean(opts.lineNumbers),
     checkUpdates: Boolean(opts.checkUpdates),
   };
 

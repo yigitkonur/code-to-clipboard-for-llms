@@ -3,6 +3,8 @@ import { getDisplayName, getFullName } from '../github/parser.js';
 import { GLYPH_CHILD, GLYPH_LAST, GLYPH_PIPE, GLYPH_SPACE } from '../constants/defaults.js';
 import { homedir } from 'node:os';
 
+const LINE_NUMBERS_NOTE = '> Note: Line numbers are for reference only—not part of the source code.';
+
 export function formatPreview(result: ScanResult): string {
   const lines: string[] = ['# 📁 Preview - Files to be Included', ''];
 
@@ -78,8 +80,13 @@ export function formatFull(result: ScanResult): string {
     lines.push(header);
     lines.push(`*${f.lineCount.toLocaleString()} lines • ${f.charCount.toLocaleString()} chars*`);
     lines.push('');
+    if (result.config.lineNumbers) {
+      lines.push(LINE_NUMBERS_NOTE);
+      lines.push('');
+    }
     lines.push(`\`\`\`${f.language}`);
-    lines.push(f.content);
+    const content = result.config.lineNumbers ? addLineNumbers(f.content) : f.content;
+    lines.push(content);
     lines.push('```');
     lines.push('');
   }
@@ -119,6 +126,14 @@ function formatTree(nodes: TreeNode[], lines: string[], prefix: string): void {
       formatTree(node.children, lines, childPrefix);
     }
   }
+}
+
+function addLineNumbers(content: string): string {
+  const lines = content.split('\n');
+  const width = String(lines.length).length;
+  return lines
+    .map((line, i) => `${String(i + 1).padStart(width)}\t${line}`)
+    .join('\n');
 }
 
 function getFileHeader(f: FileInfo): string {

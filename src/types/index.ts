@@ -21,6 +21,7 @@ export interface ScanConfig {
 
   includeBinary: boolean;
   sortAlphabetically: boolean;
+  lineNumbers: boolean;
   includeOnlyMode: boolean;
   truncateLargeFiles: boolean;
   skipLargeFiles: boolean;
@@ -105,6 +106,7 @@ export interface CLIOptions {
   interactive: boolean;
   showStats: boolean;
   sortAlpha: boolean;
+  lineNumbers: boolean;
 
   checkUpdates: boolean;
 }
